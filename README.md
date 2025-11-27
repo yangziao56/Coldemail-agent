@@ -43,3 +43,21 @@ python -m src.cli \
 ```
 
 命令会将生成的邮件文本输出到终端，可直接复制粘贴到邮箱客户端。
+
+### 用简历直接生成 sender/receiver profile
+如果不想手写 `sender.json` / `receiver.json`，可以把自己的简历或对方的公开简介保存成纯文本，交给命令行自动生成 profile：
+
+```bash
+python -m src.cli \
+  --sender-resume /path/to/my_resume.txt \
+  --sender-ask "希望邀请对方帮忙点评我的开源项目" \
+  --receiver-resume /path/to/their_profile.txt \
+  --receiver-context "我们都在做LLM agent相关项目" \
+  --goal "请对方约个20分钟视频通话" \
+  --sender-output examples/generated_sender.json \
+  --receiver-output examples/generated_receiver.json
+```
+
+- `--sender-resume` / `--receiver-resume`：从纯文本简历/简介里提取 `name` + `raw_text`，并让 LLM 自动补全（或改写）必要字段。
+- `--sender-ask` / `--sender-motivation` / `--receiver-context`：可选覆盖字段，避免模型乱猜。
+- `--sender-output` / `--receiver-output`：把生成的 JSON 落盘，便于下次重复使用。
