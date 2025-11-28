@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import google.generativeai as genai
 from PyPDF2 import PdfReader
 
-if TYPE_CHECKING:
-    from openai import OpenAI
+# Default model for Gemini
+DEFAULT_MODEL = "gemini-2.0-flash"
 
 
 @dataclass
@@ -47,15 +49,14 @@ class SenderProfile(ProfileBase):
         *,
         motivation: str,
         ask: str,
-        model: str = "gpt-4o-mini",
-        client: "OpenAI" | None = None,
+        model: str = DEFAULT_MODEL,
     ) -> "SenderProfile":
         motivation_text = motivation.strip()
         ask_text = ask.strip()
         if not motivation_text or not ask_text:
             raise ValueError("Both motivation and ask are required when loading profiles from PDF")
 
-        profile = extract_profile_from_pdf(pdf_path, model=model, client=client)
+        profile = extract_profile_from_pdf(pdf_path, model=model)
         return cls(
             name=profile.name,
             raw_text=profile.raw_text,
@@ -71,6 +72,7 @@ class SenderProfile(ProfileBase):
 @dataclass
 class ReceiverProfile(ProfileBase):
     context: str | None = None
+    sources: list[str] | None = None  # Web sources if scraped from internet
 
     @classmethod
     def from_json(cls, path: Path) -> "ReceiverProfile":
@@ -90,11 +92,10 @@ class ReceiverProfile(ProfileBase):
         cls,
         pdf_path: Path,
         *,
-        model: str = "gpt-4o-mini",
-        client: "OpenAI" | None = None,
+        model: str = DEFAULT_MODEL,
         context: str | None = None,
     ) -> "ReceiverProfile":
-        profile = extract_profile_from_pdf(pdf_path, model=model, client=client)
+        profile = extract_profile_from_pdf(pdf_path, model=model)
         return cls(
             name=profile.name,
             raw_text=profile.raw_text,
@@ -103,6 +104,49 @@ class ReceiverProfile(ProfileBase):
             skills=profile.skills,
             projects=profile.projects,
             context=context.strip() if isinstance(context, str) and context.strip() else None,
+        )
+
+    @classmethod
+    def from_web(
+        cls,
+        name: str,
+        field: str,
+        *,
+        model: str = DEFAULT_MODEL,
+        context: str | None = None,
+        max_pages: int = 3,
+    ) -> "ReceiverProfile":
+        """
+        Create a ReceiverProfile by searching the web for information about a person.
+        
+        Args:
+            name: The person's name to search for
+            field: Their field/domain (e.g., "AI research", "machine learning professor")
+            model: Gemini model to use for extraction
+            context: Optional additional context about the person
+            max_pages: Maximum number of web pages to scrape
+            
+        Returns:
+            ReceiverProfile with information scraped from the web
+        """
+        from .web_scraper import extract_person_profile_from_web
+        
+        scraped_info = extract_person_profile_from_web(
+            name=name,
+            field=field,
+            model=model,
+            max_pages=max_pages,
+        )
+        
+        return cls(
+            name=scraped_info.name,
+            raw_text=scraped_info.raw_text,
+            education=scraped_info.education,
+            experiences=scraped_info.experiences,
+            skills=scraped_info.skills,
+            projects=scraped_info.projects,
+            context=context.strip() if isinstance(context, str) and context.strip() else None,
+            sources=scraped_info.sources,
         )
 
 
@@ -157,37 +201,48 @@ def _profile_from_dict(profile_data: dict[str, Any], *, raw_text: str) -> Profil
     )
 
 
+def _configure_gemini() -> None:
+    """Configure Gemini API with the API key from environment."""
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "Gemini API key not found. Please set GEMINI_API_KEY or GOOGLE_API_KEY environment variable."
+        )
+    genai.configure(api_key=api_key)
+
+
+def _call_gemini(prompt: str, *, model: str = DEFAULT_MODEL, json_mode: bool = False) -> str:
+    """Call Gemini API and return the response text."""
+    _configure_gemini()
+    
+    generation_config = {}
+    if json_mode:
+        generation_config["response_mime_type"] = "application/json"
+    
+    gemini_model = genai.GenerativeModel(model, generation_config=generation_config or None)
+    response = gemini_model.generate_content(prompt)
+    
+    if not response.text:
+        raise RuntimeError("Gemini response did not contain any content")
+    return response.text
+
+
 def extract_profile_from_text(
-    resume_text: str, *, model: str = "gpt-4o-mini", client: "OpenAI" | None = None
+    resume_text: str, *, model: str = DEFAULT_MODEL
 ) -> ProfileBase:
     cleaned_text = resume_text.strip()
     if not cleaned_text:
         raise ValueError("Resume text must be a non-empty string")
 
-    system_message = {
-        "role": "system",
-        "content": (
-            "Extract a structured profile from the provided resume text. "
-            "Return strict JSON with the keys: name (string), education (list of strings), "
-            "experiences (list of strings), skills (list of strings), projects (list of strings)."
-        ),
-    }
-    user_message = {
-        "role": "user",
-        "content": f"Resume text:\n{cleaned_text}\n\nReturn JSON only.",
-    }
-
-    from openai import OpenAI
-
-    api_client = client or OpenAI()
-    completion = api_client.chat.completions.create(
-        model=model,
-        messages=[system_message, user_message],
-        response_format={"type": "json_object"},
+    prompt = (
+        "Extract a structured profile from the provided resume text. "
+        "Return strict JSON with the keys: name (string), education (list of strings), "
+        "experiences (list of strings), skills (list of strings), projects (list of strings).\n\n"
+        f"Resume text:\n{cleaned_text}\n\nReturn JSON only."
     )
-    content = completion.choices[0].message.content
-    if not content:
-        raise RuntimeError("OpenAI response did not contain any content")
+
+    content = _call_gemini(prompt, model=model, json_mode=True)
+    
     try:
         profile_data = json.loads(content)
     except json.JSONDecodeError as exc:
@@ -197,10 +252,10 @@ def extract_profile_from_text(
 
 
 def extract_profile_from_pdf(
-    pdf_path: Path, *, model: str = "gpt-4o-mini", client: "OpenAI" | None = None
+    pdf_path: Path, *, model: str = DEFAULT_MODEL
 ) -> ProfileBase:
     pdf_text = extract_text_from_pdf(pdf_path)
-    return extract_profile_from_text(pdf_text, model=model, client=client)
+    return extract_profile_from_text(pdf_text, model=model)
 
 
 def build_prompt(sender: SenderProfile, receiver: ReceiverProfile, goal: str) -> list[dict[str, str]]:
@@ -260,15 +315,14 @@ def generate_email(
     receiver: ReceiverProfile,
     goal: str,
     *,
-    model: str = "gpt-4o-mini",
-    client: "OpenAI" | None = None,
+    model: str = DEFAULT_MODEL,
 ) -> str:
     messages = build_prompt(sender, receiver, goal)
-    from openai import OpenAI
-
-    api_client = client or OpenAI()
-    completion = api_client.chat.completions.create(model=model, messages=messages)
-    content = completion.choices[0].message.content
-    if not content:
-        raise RuntimeError("OpenAI response did not contain any content")
+    
+    # Combine system and user messages into a single prompt for Gemini
+    system_content = messages[0]["content"]
+    user_content = messages[1]["content"]
+    prompt = f"System instruction: {system_content}\n\nUser request:\n{user_content}"
+    
+    content = _call_gemini(prompt, model=model)
     return content.strip()

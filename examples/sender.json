@@ -1,6 +1,6 @@
 {
   "name": "Your Name",
-  "raw_text": "在这里粘贴你的简历 / 自我介绍 / 代表性项目描述。",
-  "motivation": "用你自己的话写：为什么想联系这个人，对他/她哪点很感兴趣。",
-  "ask": "你希望对方帮什么，比如：a 20-min Zoom call about X / feedback on Y / career advice on Z."
+  "raw_text": "Paste your resume / self-introduction / representative project description here.",
+  "motivation": "Write in your own words: why you want to contact this person, what interests you about them.",
+  "ask": "What you hope they can help with, e.g., a 20-min Zoom call about X / feedback on Y / career advice on Z."
 }

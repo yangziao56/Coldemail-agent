@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cold Email Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            margin: 0;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel h2 .icon {
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            background: #eef0ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e0e5ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area .icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .upload-area .filename {
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .profile-display {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .profile-display h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+
+        .profile-item {
+            margin-bottom: 12px;
+        }
+
+        .profile-item strong {
+            color: #333;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .profile-item ul {
+            margin-left: 20px;
+            color: #666;
+        }
+
+        .profile-item li {
+            margin-bottom: 4px;
+        }
+
+        .sources {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .sources a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 12px;
+            display: block;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sources a:hover {
+            text-decoration: underline;
+        }
+
+        .email-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .email-panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #28a745;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .email-content {
+            width: 100%;
+            min-height: 300px;
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .email-content:focus {
+            outline: none;
+            border-color: #28a745;
+        }
+
+        .email-actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-copy {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #218838;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            color: #666;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #c00;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .success {
+            background: #e6ffe6;
+            color: #080;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .success.active {
+            display: block;
+        }
+
+        .goal-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .goal-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffc107;
+        }
+
+        .generate-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn-generate {
+            padding: 16px 48px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-generate:hover {
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✉️ Cold Email Generator</h1>
+            <a href="/logout" class="btn-logout">🚪 Logout</a>
+        </div>
+        
+        <div class="main-content">
+            <!-- Left Panel - Sender -->
+            <div class="panel">
+                <h2><span class="icon">👤</span> Sender (You)</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="icon">📄</div>
+                    <p><strong>Upload your PDF Resume</strong></p>
+                    <p>Drag & drop or click to select</p>
+                    <div class="filename" id="fileName"></div>
+                    <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
+                </div>
+                
+                <div class="loading" id="senderLoading">
+                    <div class="spinner"></div>
+                    <span>Extracting profile from PDF...</span>
+                </div>
+                
+                <div class="error" id="senderError"></div>
+                
+                <div class="profile-display" id="senderProfile" style="display: none;">
+                    <h3>📋 Extracted Profile</h3>
+                    <div id="senderProfileContent"></div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>💡 Motivation (Why you want to reach out)</label>
+                    <textarea id="motivation" placeholder="e.g., I'm fascinated by your work on AI safety and would love to learn more about your research direction."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>🎯 Ask (What you hope they can help with)</label>
+                    <textarea id="ask" placeholder="e.g., I would appreciate the opportunity to discuss potential collaboration or get career advice."></textarea>
+                </div>
+            </div>
+            
+            <!-- Right Panel - Receiver -->
+            <div class="panel">
+                <h2><span class="icon">🎯</span> Receiver (Target Person)</h2>
+                
+                <div class="form-group">
+                    <label>👤 Name</label>
+                    <input type="text" id="receiverName" placeholder="e.g., Andrew Ng">
+                </div>
+                
+                <div class="form-group">
+                    <label>🏷️ Field / Domain</label>
+                    <input type="text" id="receiverField" placeholder="e.g., AI research, machine learning, deep learning">
+                </div>
+                
+                <div class="form-group">
+                    <label>📝 Context (Optional - recent news, how you found them)</label>
+                    <textarea id="receiverContext" placeholder="e.g., Recently published a paper on constitutional AI that caught my attention."></textarea>
+                </div>
+                
+                <button class="btn btn-primary" id="searchBtn" onclick="searchReceiver()">
+                    🔍 Search Web for Info
+                </button>
+                
+                <div class="loading" id="receiverLoading">
+                    <div class="spinner"></div>
+                    <span>Searching the web...</span>
+                </div>
+                
+                <div class="error" id="receiverError"></div>
+                
+                <div class="profile-display" id="receiverProfile" style="display: none;">
+                    <h3>📋 Found Profile</h3>
+                    <div id="receiverProfileContent"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Goal Section -->
+        <div class="goal-section">
+            <h2>🎯 Email Goal</h2>
+            <div class="form-group">
+                <textarea id="goal" placeholder="e.g., Request a 20-minute virtual coffee chat to discuss AI research opportunities and get career advice." style="min-height: 60px;"></textarea>
+            </div>
+        </div>
+        
+        <!-- Generate Button -->
+        <div class="generate-section">
+            <button class="btn btn-primary btn-generate" id="generateBtn" onclick="generateEmail()">
+                ✨ Generate Email
+            </button>
+        </div>
+        
+        <div class="loading" id="emailLoading">
+            <div class="spinner"></div>
+            <span>Generating email with AI...</span>
+        </div>
+        
+        <div class="error" id="emailError"></div>
+        
+        <!-- Email Output -->
+        <div class="email-panel" id="emailPanel" style="display: none;">
+            <h2><span class="icon">📧</span> Generated Email</h2>
+            <textarea class="email-content" id="emailContent"></textarea>
+            <div class="email-actions">
+                <button class="btn btn-copy" onclick="copyEmail()">
+                    📋 Copy to Clipboard
+                </button>
+                <button class="btn btn-secondary" onclick="regenerateEmail()">
+                    🔄 Regenerate
+                </button>
+            </div>
+            <div class="success" id="copySuccess">✅ Copied to clipboard!</div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let senderData = null;
+        let receiverData = null;
+        
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const pdfInput = document.getElementById('pdfInput');
+        const fileName = document.getElementById('fileName');
+        
+        uploadArea.addEventListener('click', () => pdfInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                handlePdfUpload(files[0]);
+            }
+        });
+        
+        pdfInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handlePdfUpload(e.target.files[0]);
+            }
+        });
+        
+        async function handlePdfUpload(file) {
+            fileName.textContent = file.name;
+            
+            const formData = new FormData();
+            formData.append('pdf', file);
+            formData.append('session_id', 'user_session');
+            
+            showLoading('senderLoading');
+            hideError('senderError');
+            document.getElementById('senderProfile').style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/upload-sender-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError('senderError', data.error);
+                } else {
+                    senderData = data.profile;
+                    displayProfile('senderProfileContent', senderData);
+                    document.getElementById('senderProfile').style.display = 'block';
+                }
+            } catch (error) {
+                showError('senderError', 'Failed to upload PDF: ' + error.message);
+            }
+            
+            hideLoading('senderLoading');
+        }
+        
+        async function searchReceiver() {
+            const name = document.getElementById('receiverName').value.trim();
+            const field = document.getElementById('receiverField').value.trim();
+            
+            if (!name) {
+                showError('receiverError', 'Please enter the receiver\'s name');
+                return;
+            }
+            if (!field) {
+                showError('receiverError', 'Please enter the receiver\'s field');
+                return;
+            }
+            
+            showLoading('receiverLoading');
+            hideError('receiverError');
+            document.getElementById('receiverProfile').style.display = 'none';
+            document.getElementById('searchBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/api/search-receiver', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, field })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError('receiverError', data.error);
+                } else {
+                    receiverData = data.profile;
+                    displayProfile('receiverProfileContent', receiverData, true);
+                    document.getElementById('receiverProfile').style.display = 'block';
+                }
+            } catch (error) {
+                showError('receiverError', 'Failed to search: ' + error.message);
+            }
+            
+            hideLoading('receiverLoading');
+            document.getElementById('searchBtn').disabled = false;
+        }
+        
+        function displayProfile(elementId, profile, showSources = false) {
+            const container = document.getElementById(elementId);
+            let html = `<div class="profile-item"><strong>Name:</strong> ${profile.name}</div>`;
+            
+            if (profile.education && profile.education.length > 0) {
+                html += `<div class="profile-item"><strong>Education:</strong><ul>`;
+                profile.education.forEach(item => html += `<li>${item}</li>`);
+                html += `</ul></div>`;
+            }
+            
+            if (profile.experiences && profile.experiences.length > 0) {
+                html += `<div class="profile-item"><strong>Experience:</strong><ul>`;
+                profile.experiences.forEach(item => html += `<li>${item}</li>`);
+                html += `</ul></div>`;
+            }
+            
+            if (profile.skills && profile.skills.length > 0) {
+                html += `<div class="profile-item"><strong>Skills:</strong> ${profile.skills.join(', ')}</div>`;
+            }
+            
+            if (profile.projects && profile.projects.length > 0) {
+                html += `<div class="profile-item"><strong>Projects:</strong><ul>`;
+                profile.projects.forEach(item => html += `<li>${item}</li>`);
+                html += `</ul></div>`;
+            }
+            
+            if (showSources && profile.sources && profile.sources.length > 0) {
+                html += `<div class="sources"><strong>Sources:</strong>`;
+                profile.sources.forEach(url => html += `<a href="${url}" target="_blank">${url}</a>`);
+                html += `</div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        async function generateEmail() {
+            const motivation = document.getElementById('motivation').value.trim();
+            const ask = document.getElementById('ask').value.trim();
+            const goal = document.getElementById('goal').value.trim();
+            const receiverContext = document.getElementById('receiverContext').value.trim();
+            
+            if (!goal) {
+                showError('emailError', 'Please enter your email goal');
+                return;
+            }
+            
+            // Prepare sender data
+            const sender = senderData ? {
+                ...senderData,
+                motivation: motivation || 'Interested in connecting',
+                ask: ask || 'Would appreciate the opportunity to chat'
+            } : {
+                name: 'Your Name',
+                raw_text: motivation + ' ' + ask,
+                education: [],
+                experiences: [],
+                skills: [],
+                projects: [],
+                motivation: motivation || 'Interested in connecting',
+                ask: ask || 'Would appreciate the opportunity to chat'
+            };
+            
+            // Prepare receiver data
+            const receiver = receiverData ? {
+                ...receiverData,
+                raw_text: receiverData.raw_text || '',
+                context: receiverContext
+            } : {
+                name: document.getElementById('receiverName').value.trim() || 'Receiver',
+                raw_text: '',
+                education: [],
+                experiences: [],
+                skills: [],
+                projects: [],
+                context: receiverContext
+            };
+            
+            showLoading('emailLoading');
+            hideError('emailError');
+            document.getElementById('emailPanel').style.display = 'none';
+            document.getElementById('generateBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/api/generate-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender, receiver, goal })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError('emailError', data.error);
+                } else {
+                    document.getElementById('emailContent').value = data.email;
+                    document.getElementById('emailPanel').style.display = 'block';
+                    document.getElementById('emailPanel').scrollIntoView({ behavior: 'smooth' });
+                }
+            } catch (error) {
+                showError('emailError', 'Failed to generate email: ' + error.message);
+            }
+            
+            hideLoading('emailLoading');
+            document.getElementById('generateBtn').disabled = false;
+        }
+        
+        function regenerateEmail() {
+            generateEmail();
+        }
+        
+        function copyEmail() {
+            const emailContent = document.getElementById('emailContent');
+            emailContent.select();
+            document.execCommand('copy');
+            
+            const success = document.getElementById('copySuccess');
+            success.classList.add('active');
+            setTimeout(() => success.classList.remove('active'), 2000);
+        }
+        
+        function showLoading(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        
+        function hideLoading(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+        
+        function showError(id, message) {
+            const el = document.getElementById(id);
+            el.textContent = message;
+            el.classList.add('active');
+        }
+        
+        function hideError(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+    </script>
+</body>
+</html>
