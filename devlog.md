@@ -1,5 +1,69 @@
 # Development Log
 
+## 2025-11-29: v2.0 - Web Interface with Smart Wizard 🎉
+
+### New Features
+
+- **Multi-Step Wizard Interface**
+  - Step 1: Purpose & Field Selection
+    - 4 purpose options: Academic, Job Seeking, Coffee Chat, Other
+    - 4 field options: AI/ML, Software Engineering, Finance/Fintech, Other
+    - Custom input support for both
+  
+  - Step 2: Profile Building
+    - Resume upload option (PDF)
+    - Quick questionnaire (5 questions) for users without resume
+    - Each question has 4 options with custom input
+  
+  - Step 3: Target Discovery
+    - Manual target input
+    - AI-powered recommendation system (top 10 matches)
+    - Match analysis with compatibility score
+    - "Generate More" and "Add Manually" options
+  
+  - Step 4: Email Generation & Customization
+    - Regenerate with style options:
+      - More Professional
+      - More Friendly  
+      - More Concise
+      - More Detailed
+      - Custom instructions
+    - Copy to clipboard functionality
+
+- **Password Protection**
+  - Session-based authentication
+  - Password: gogogochufalo
+
+- **Render Deployment**
+  - Live at https://coldemail-agent.onrender.com/
+  - Gunicorn production server
+  - Environment variable configuration
+
+### New Files
+- `templates/index_v2.html`: New wizard-style web interface
+- `templates/login.html`: Login page
+- `app.py`: Flask web application
+- `Procfile`: Render deployment config
+- `runtime.txt`: Python version specification
+
+### Modified Files
+- `src/email_agent.py`:
+  - Added `generate_questionnaire()`: Generate profile questions
+  - Added `build_profile_from_answers()`: Build profile from questionnaire
+  - Added `find_target_recommendations()`: AI-powered target suggestions
+  - Added `regenerate_email_with_style()`: Style-based email regeneration
+
+- `src/web_scraper.py`:
+  - Now uses Gemini's knowledge base first (fixes cloud server blocking)
+  - Web scraping as fallback
+  - Returns basic profile even if all methods fail
+
+### New Dependencies
+- `flask>=3.0.0`
+- `gunicorn>=21.0.0`
+
+---
+
 ## 2025-11-29: v1.2 - Switch to Gemini API
 
 ### Changes

@@ -1,19 +1,49 @@
-# notes.md — Honest Connect Email Agent
+# notes.md — Cold Email Generator
 
-## 0. 我要做的东西（一句话）
+## 0. 项目目标（一句话）
 
 从两个人身上尽可能多的信息里，  
 找到他们的**交集**和**可以互相提供的价值**，  
 写出一封**真诚的第一封冷邮件**，帮他们建立真实的连接。
 
-之后再在这个核心上扩展到：
-- 一对多（同一个 sender → 多个 receiver）
-- 自动帮用户找合适的 receiver
-- 不同场景：fund / tech / 学生找老师 / 职场前辈等
+---
+
+## 1. 版本演进
+
+### v2.0 (Current) - 智能向导式 Web 界面 🎉
+
+**已实现功能：**
+
+1. **Step 1: 目的选择**
+   - 4个大类：学术陶瓷 ��、求职 💼、Coffee Chat ☕、其他 ✨
+   - 4个领域：AI/ML 🤖、软件工程 💻、金融/Fintech 📈、其他 🔬
+   - 支持自定义输入
+
+2. **Step 2: 用户画像**
+   - 有简历：上传 PDF 自动解析
+   - 没简历：5 道选择题快速建立画像（每题 4 选项含自定义）
+
+3. **Step 3: 找目标人选**
+   - 手动输入：名字 + 领域
+   - AI 推荐：最适配的 10 人 list，含契合度分析
+   - 支持"继续生成"和"手动添加"
+
+4. **Step 4: 生成邮件 + Regenerate**
+   - 风格调整选项：更专业 / 更亲近 / 更简洁 / 更详细 / 自定义
+
+**线上地址**: https://coldemail-agent.onrender.com/  
+**密码**: gogogochufalo
+
+### v1.x - CLI 工具
+
+- v1.2: 切换到 Google Gemini API
+- v1.1: 网络搜索获取 receiver 信息
+- v1.0: PDF 简历解析
+- v0: JSON 输入
 
 ---
 
-## 1. 核心抽象（以后都尽量不改）
+## 2. 核心抽象（以后都尽量不改）
 
 整个项目围绕一个核心函数：
 
@@ -28,64 +58,24 @@
 - 工程师 → big tech mentor  
 - 学生 → 教授  
 
-都要能被抽象成这三样输入。如果某个未来功能完全塞不进这个抽象，就先不做。
+都要能被抽象成这三样输入。
 
 ---
 
-## 2. v0 版本：只做一件非常小但真实的事
+## 3. 技术栈
 
-### 2.1 v0 目标
+- **后端**: Python, Flask, Google Gemini API (gemini-2.0-flash)
+- **前端**: HTML, CSS, JavaScript (原生)
+- **部署**: Render.com + Gunicorn
+- **PDF 解析**: PyPDF2
+- **网络抓取**: BeautifulSoup4, Requests
 
-做一个**命令行小工具**：
+---
 
-- 输入：
-  - 一个 `sender.json`
-  - 一个 `receiver.json`
-  - 一个简单的 `goal` 字符串
-- 输出：
-  - 一封可以直接复制进邮箱的邮件文本（含 Subject）
+## 4. 未来扩展方向
 
-暂时不管 UI、不管自动找人、不管批量发，只追求一封邮件的质量和“真诚感”。
-
-### 2.2 v0 输入格式（先用最简单可用的）
-
-`sender.json`（用户自己写，越详细越好）：
-
-```json
-{
-  "name": "Your Name",
-  "raw_text": "在这里粘贴你的简历 / 自我介绍 / 代表性项目描述。",
-  "motivation": "用你自己的话写：为什么想联系这个人，对他/她哪点很感兴趣。",
-  "ask": "你希望对方帮什么，比如：a 20-min Zoom call about X / feedback on Y / career advice on Z."
-}
-
-### 2.3 v1 版本：从 PDF 简历中自动抽取信息
-
-**v1 要解决的唯一一件事：**  
-让用户只需要上传两份 PDF（自己与对方），系统自动把简历内容抽取成结构化的 SenderProfile 和 ReceiverProfile。
-
-输入：
-
-- 一个 sender.pdf  
-- 一个 receiver.pdf  
-- 一个 goal 字符串
-
-内部处理：
-
-- 用简单可靠的 PDF 文本提取器（如 PyPDF2 或 pdfminer）拿到纯文本  
-- 调统一的 ExtractProfile(text) → ProfileJSON  
-- 输出结构化的 JSON：  
-  - name  
-  - education  
-  - experiences  
-  - skills  
-  - projects  
-  - raw_text  
-  - 以及你 v0 中的 motivation / ask 仍然让用户自己补
-
-输出：
-
-- 生成一封第一封“真诚冷邮件”（含 Subject）
-
-**v1 聚焦：提取信息，而不是信息质量最佳。  
-质量差一点没关系，只要结构稳定即可。
+- [ ] 一对多（同一个 sender → 多个 receiver 批量生成）
+- [ ] 邮件发送集成（直接发送而非复制）
+- [ ] 用户账号系统（保存历史记录）
+- [ ] 更多领域和场景模板
+- [ ] 邮件效果追踪（打开率、回复率）

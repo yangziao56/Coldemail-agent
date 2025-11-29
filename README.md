@@ -1,12 +1,51 @@
-# Honest Connect Email Agent (v1)
+# Cold Email Generator
 
-A command-line tool for generating sincere cold emails:
+An intelligent cold email generation tool with a step-by-step wizard interface.
 
-- **v1 Core**: Read two PDF resumes (sender & receiver), automatically extract structured information, and generate a genuine first-contact cold email (Subject + Body).
-- **v1.1 New Feature**: Search and scrape receiver information from the web using just their name and field - no PDF or JSON file needed.
-- Also compatible with v0 JSON input for manual debugging or adding detailed information.
+🌐 **Live Demo**: [https://coldemail-agent.onrender.com/](https://coldemail-agent.onrender.com/)
 
-## Prerequisites
+## Features
+
+### v2 (Current) - Web Interface with Smart Wizard 🆕
+
+- **Step 1: Purpose Selection**
+  - 4 purpose categories: Academic Outreach 🎓, Job Seeking 💼, Coffee Chat ☕, Other ✨
+  - 4 field categories: AI/ML 🤖, Software Engineering 💻, Finance/Fintech 📈, Other 🔬
+  - Custom input support for both
+
+- **Step 2: Build Your Profile**
+  - Option A: Upload PDF resume (recommended)
+  - Option B: Quick 5-question questionnaire to build profile
+    - Each question has 4 options including custom input
+
+- **Step 3: Find Targets**
+  - Manual input: Enter name and field directly
+  - AI Recommendations: Get top 10 matching contacts based on your profile
+    - Click any person to see match analysis
+    - Options to generate more or add manually
+
+- **Step 4: Generate & Customize Email**
+  - Regenerate with different styles:
+    - 📋 More Professional
+    - 😊 More Friendly
+    - ✂️ More Concise
+    - 📝 More Detailed
+    - ✏️ Custom instructions
+
+### v1.x - CLI Tool
+
+- **v1.2**: Switched to Google Gemini API
+- **v1.1**: Web search for receiver info (name + field only)
+- **v1.0**: PDF resume parsing
+- **v0**: JSON input support
+
+## Quick Start
+
+### Web Interface (Recommended)
+
+Visit [https://coldemail-agent.onrender.com/](https://coldemail-agent.onrender.com/) and use password: `gogogochufalo`
+
+### Local Development
 
 1. Install dependencies:
    ```bash
@@ -16,14 +55,19 @@ A command-line tool for generating sincere cold emails:
 2. Set up Google Gemini API Key:
    ```bash
    export GEMINI_API_KEY=your_api_key
-   # or
-   export GOOGLE_API_KEY=your_api_key
    ```
    Get your API Key: https://makersuite.google.com/app/apikey
 
-## Web Search Input (New Feature 🆕)
+3. Run the web app:
+   ```bash
+   python app.py
+   ```
 
-Simply provide the receiver's name and field, and the system will automatically search and scrape relevant information from the web:
+4. Open http://localhost:5000 in your browser
+
+### CLI Usage
+
+#### Web Search Input
 
 ```bash
 python -m src.cli \
@@ -32,21 +76,10 @@ python -m src.cli \
   --receiver-field "AI research, deep learning" \
   --motivation "Why you want to reach out" \
   --ask "What you hope they can help with" \
-  --goal "Request a 20-min chat to discuss their recent projects and your relevant experience"
+  --goal "Request a 20-min chat to discuss their recent projects"
 ```
 
-The command will automatically:
-1. Search for web pages about the person using search engines;
-2. Scrape and extract relevant information from web pages;
-3. Use Gemini model to organize information into a structured Profile;
-4. Generate an email ready to paste, combining your motivation and ask.
-
-Optional parameters:
-- `--receiver-context`: Your relationship with the receiver or recent news you're following (optional).
-- `--max-pages`: Maximum number of web pages to scrape, default 3.
-- `--model`: Gemini model to use, default `gemini-2.0-flash`.
-
-## PDF Input (Recommended)
+#### PDF Input
 
 ```bash
 python -m src.cli \
@@ -54,27 +87,26 @@ python -m src.cli \
   --receiver-pdf /path/to/receiver.pdf \
   --motivation "Why you want to reach out" \
   --ask "What you hope they can help with" \
-  --goal "Request a 20-min chat to discuss their recent projects and your relevant experience"
+  --goal "Request a 20-min chat"
 ```
 
-The command will automatically:
-1. Extract plain text from PDF using PyPDF2;
-2. Use Gemini model to organize text into a structured Profile (name/education/experiences/skills/projects/raw_text);
-3. Generate an email ready to paste, combining your motivation and ask.
-
-Optional parameters:
-- `--receiver-context`: Your relationship with the receiver or recent news you're following (optional).
-- `--model`: Gemini model to use, default `gemini-2.0-flash`.
-
-## JSON Input (v0 Compatible)
+#### JSON Input (v0 Compatible)
 
 ```bash
 python -m src.cli \
   --sender-json examples/sender.json \
   --receiver-json examples/receiver.json \
-  --goal "Request a 20-min chat to discuss their recent projects and your relevant experience"
+  --goal "Request a 20-min chat"
 ```
 
-Example files are in the `examples/` directory. Fields include `name`, `raw_text`, `motivation`, `ask`, and optionally `education`, `experiences`, `skills`, `projects`.
+## Tech Stack
 
-The generated email will be printed to the terminal, ready to copy and paste into your email client.
+- **Backend**: Python, Flask, Google Gemini API
+- **Frontend**: HTML, CSS, JavaScript
+- **Deployment**: Render.com
+- **PDF Parsing**: PyPDF2
+- **Web Scraping**: BeautifulSoup4, Requests
+
+## License
+
+MIT
