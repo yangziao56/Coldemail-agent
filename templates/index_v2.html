@@ -710,7 +710,7 @@
         <!-- Step 1: Purpose -->
         <div class="panel" id="step-1">
             <h2><span class="icon">🎯</span> Step 1: What's Your Purpose?</h2>
-            <p class="panel-description">Select the type of outreach you want to make and specify your field.</p>
+            <p class="panel-description">Select the type of outreach you want to make.</p>
             
             <div class="form-group">
                 <label>What do you want to achieve?</label>
@@ -738,35 +738,6 @@
                 </div>
                 <div class="custom-input" id="purpose-custom">
                     <input type="text" id="purpose-custom-input" placeholder="Describe your purpose...">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>What field are you interested in?</label>
-                <div class="option-cards" id="field-options">
-                    <div class="option-card" data-value="ai-ml">
-                        <div class="icon">🤖</div>
-                        <div class="title">AI / Machine Learning</div>
-                        <div class="desc">Artificial Intelligence, Deep Learning, NLP</div>
-                    </div>
-                    <div class="option-card" data-value="software">
-                        <div class="icon">💻</div>
-                        <div class="title">Software Engineering</div>
-                        <div class="desc">Web, Mobile, Systems, Cloud</div>
-                    </div>
-                    <div class="option-card" data-value="finance">
-                        <div class="icon">📈</div>
-                        <div class="title">Finance / Fintech</div>
-                        <div class="desc">Banking, Investment, Quantitative Finance</div>
-                    </div>
-                    <div class="option-card" data-value="other-field">
-                        <div class="icon">🔬</div>
-                        <div class="title">Other Field</div>
-                        <div class="desc">Specify your field below</div>
-                    </div>
-                </div>
-                <div class="custom-input" id="field-custom">
-                    <input type="text" id="field-custom-input" placeholder="Enter your field...">
                 </div>
             </div>
 
@@ -838,6 +809,78 @@
                 <div class="choice-buttons" id="target-choice">
                     <button class="choice-btn" data-value="yes">🎯 Yes, I know who to contact</button>
                     <button class="choice-btn" data-value="no">🔍 No, help me find matches</button>
+                </div>
+            </div>
+
+            <!-- Target preferences for recommendations -->
+            <div class="hidden" id="target-preferences">
+                <div class="notice" style="margin-bottom: 12px;">
+                    <span class="icon">💡</span> Tell us what to look for and we'll propose great targets.
+                </div>
+                <div class="form-group">
+                    <label>What field or specialization should we target? <span style="color:#d9534f;">*</span></label>
+                    <div class="choice-buttons" id="pref-field-options">
+                        <button class="choice-btn" data-value="AI / Machine Learning">🤖 AI / Machine Learning</button>
+                        <button class="choice-btn" data-value="Software Engineering">💻 Software Engineering</button>
+                        <button class="choice-btn" data-value="Product Management">🧭 Product Management</button>
+                        <button class="choice-btn" data-value="Data / Analytics">📊 Data / Analytics</button>
+                        <button class="choice-btn" data-value="Finance / Fintech">📈 Finance / Fintech</button>
+                        <button class="choice-btn" data-value="other">🔬 Other</button>
+                    </div>
+                    <div class="custom-input" id="pref-field-custom">
+                        <input type="text" id="pref-field-custom-input" placeholder="Enter the field or niche...">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>What level of seniority are you aiming for?</label>
+                    <div class="choice-buttons" id="pref-seniority-options">
+                        <button class="choice-btn" data-value="Entry / Junior">📘 Entry / Junior</button>
+                        <button class="choice-btn" data-value="Mid-level IC">📗 Mid-level IC</button>
+                        <button class="choice-btn" data-value="Senior / Staff IC">📙 Senior / Staff IC</button>
+                        <button class="choice-btn" data-value="Leadership (Director/VP/CXO)">📕 Leadership</button>
+                        <button class="choice-btn" data-value="Academic (Professor/PI)">🎓 Academic</button>
+                        <button class="choice-btn" data-value="Other">➕ Other</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>What type of organization?</label>
+                    <div class="choice-buttons" id="pref-org-options">
+                        <button class="choice-btn" data-value="Big Tech / Large Enterprise">🏢 Big Tech / Enterprise</button>
+                        <button class="choice-btn" data-value="Startup / Scaleup">🚀 Startup / Scaleup</button>
+                        <button class="choice-btn" data-value="Academia / Research Lab">🔬 Academia / Lab</button>
+                        <button class="choice-btn" data-value="VC / Investment">💸 VC / Investment</button>
+                        <button class="choice-btn" data-value="Nonprofit / Public Sector">🤝 Nonprofit / Public Sector</button>
+                        <button class="choice-btn" data-value="Other">➕ Other</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>What's your primary goal for this outreach?</label>
+                    <div class="choice-buttons" id="pref-goal-options">
+                        <button class="choice-btn" data-value="Research collaboration / mentorship">🧠 Research collab / mentorship</button>
+                        <button class="choice-btn" data-value="Job / internship opportunity">💼 Job / internship</button>
+                        <button class="choice-btn" data-value="Networking / informational chat">☕ Networking / coffee chat</button>
+                        <button class="choice-btn" data-value="Business or partnership intro">🤝 Business / partnership</button>
+                        <button class="choice-btn" data-value="Speaking / media opportunity">🎤 Speaking / media</button>
+                        <button class="choice-btn" data-value="Other">➕ Other</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>How well-known should the targets be?</label>
+                    <div class="choice-buttons" id="pref-prominence-options">
+                        <button class="choice-btn" data-value="Global leaders">🌍 Global leaders</button>
+                        <button class="choice-btn" data-value="Well-known but accessible">⭐ Well-known but accessible</button>
+                        <button class="choice-btn" data-value="Mid-level practitioners">📌 Mid-level practitioners</button>
+                        <button class="choice-btn" data-value="Rising talent">🌱 Rising talent</button>
+                        <button class="choice-btn" data-value="No preference">🙌 No preference</button>
+                    </div>
+                </div>
+
+                <div class="btn-group" style="justify-content: flex-end;">
+                    <button class="btn btn-primary" id="btn-find-matches" disabled>Find Matches</button>
                 </div>
             </div>
 
@@ -959,8 +1002,14 @@
             step: 1,
             purpose: null,
             purposeCustom: '',
-            field: null,
-            fieldCustom: '',
+            targetPrefs: {
+                field: '',
+                fieldCustom: '',
+                seniority: '',
+                orgType: '',
+                outreachGoal: '',
+                prominence: ''
+            },
             hasResume: null,
             senderProfile: null,
             questionnaireAnswers: {},
@@ -980,13 +1029,6 @@
             'other': ''
         };
 
-        const fieldLabels = {
-            'ai-ml': 'AI / Machine Learning',
-            'software': 'Software Engineering',
-            'finance': 'Finance / Fintech',
-            'other-field': ''
-        };
-
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             setupOptionCards();
@@ -994,6 +1036,7 @@
             setupFileUpload();
             setupNavigationButtons();
             setupRegenerate();
+            setupPreferenceForm();
         });
 
         // Setup option card selection
@@ -1014,32 +1057,9 @@
                     checkStep1Valid();
                 });
             });
-
-            // Field options
-            document.querySelectorAll('#field-options .option-card').forEach(card => {
-                card.addEventListener('click', function() {
-                    document.querySelectorAll('#field-options .option-card').forEach(c => c.classList.remove('selected'));
-                    this.classList.add('selected');
-                    state.field = this.dataset.value;
-                    
-                    const customInput = document.getElementById('field-custom');
-                    if (state.field === 'other-field') {
-                        customInput.classList.add('visible');
-                    } else {
-                        customInput.classList.remove('visible');
-                    }
-                    checkStep1Valid();
-                });
-            });
-
             // Custom input listeners
             document.getElementById('purpose-custom-input').addEventListener('input', function() {
                 state.purposeCustom = this.value;
-                checkStep1Valid();
-            });
-
-            document.getElementById('field-custom-input').addEventListener('input', function() {
-                state.fieldCustom = this.value;
                 checkStep1Valid();
             });
         }
@@ -1073,12 +1093,17 @@
                     
                     if (state.hasTarget) {
                         document.getElementById('manual-target-section').classList.remove('hidden');
+                        document.getElementById('target-preferences').classList.add('hidden');
                         document.getElementById('recommendation-section').classList.add('hidden');
                         document.getElementById('match-details').classList.remove('visible');
+                        resetRecommendationState();
                     } else {
                         document.getElementById('manual-target-section').classList.add('hidden');
-                        document.getElementById('recommendation-section').classList.remove('hidden');
-                        loadRecommendations();
+                        document.getElementById('target-preferences').classList.remove('hidden');
+                        document.getElementById('recommendation-section').classList.add('hidden');
+                        document.getElementById('match-details').classList.remove('visible');
+                        resetRecommendationState();
+                        updateFindMatchesEnabled();
                     }
                     checkStep3Valid();
                 });
@@ -1087,6 +1112,55 @@
             // Manual target inputs
             document.getElementById('target-name').addEventListener('input', checkStep3Valid);
             document.getElementById('target-field').addEventListener('input', checkStep3Valid);
+        }
+
+        // Setup preference questions for recommendations
+        function setupPreferenceForm() {
+            const fieldOptions = document.querySelectorAll('#pref-field-options .choice-btn');
+            fieldOptions.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    fieldOptions.forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    state.targetPrefs.field = this.dataset.value;
+                    
+                    const custom = document.getElementById('pref-field-custom');
+                    if (state.targetPrefs.field === 'other') {
+                        custom.classList.add('visible');
+                    } else {
+                        custom.classList.remove('visible');
+                        state.targetPrefs.fieldCustom = '';
+                        document.getElementById('pref-field-custom-input').value = '';
+                    }
+                    updateFindMatchesEnabled();
+                });
+            });
+
+            document.getElementById('pref-field-custom-input').addEventListener('input', function() {
+                state.targetPrefs.fieldCustom = this.value;
+                updateFindMatchesEnabled();
+            });
+
+            const prefGroups = [
+                { selector: '#pref-seniority-options', key: 'seniority' },
+                { selector: '#pref-org-options', key: 'orgType' },
+                { selector: '#pref-goal-options', key: 'outreachGoal' },
+                { selector: '#pref-prominence-options', key: 'prominence' }
+            ];
+
+            prefGroups.forEach(group => {
+                const buttons = document.querySelectorAll(`${group.selector} .choice-btn`);
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        buttons.forEach(b => b.classList.remove('selected'));
+                        this.classList.add('selected');
+                        state.targetPrefs[group.key] = this.dataset.value;
+                    });
+                });
+            });
+
+            document.getElementById('btn-find-matches').addEventListener('click', function() {
+                loadRecommendations();
+            });
         }
 
         // Setup file upload
@@ -1231,10 +1305,17 @@
             list.innerHTML = '';
             loading.classList.add('visible');
             actions.style.display = 'none';
+            document.getElementById('recommendation-section').classList.remove('hidden');
             
             try {
                 const purposeText = getPurposeText();
-                const fieldText = getFieldText();
+                const fieldText = getTargetFieldFromPreferences();
+                
+                if (!fieldText) {
+                    loading.classList.remove('visible');
+                    alert('Please select a field/specialization before finding matches.');
+                    return;
+                }
                 
                 const response = await fetch('/api/find-recommendations', {
                     method: 'POST',
@@ -1242,7 +1323,13 @@
                     body: JSON.stringify({
                         purpose: purposeText,
                         field: fieldText,
-                        sender_profile: state.senderProfile
+                        sender_profile: state.senderProfile,
+                        preferences: {
+                            seniority: state.targetPrefs.seniority,
+                            org_type: state.targetPrefs.orgType,
+                            outreach_goal: state.targetPrefs.outreachGoal,
+                            prominence: state.targetPrefs.prominence
+                        }
                     })
                 });
                 
@@ -1458,8 +1545,10 @@
                 document.querySelectorAll('#target-choice .choice-btn').forEach(b => b.classList.remove('selected'));
                 document.querySelector('#target-choice .choice-btn[data-value="yes"]').classList.add('selected');
                 document.getElementById('manual-target-section').classList.remove('hidden');
+                document.getElementById('target-preferences').classList.add('hidden');
                 document.getElementById('recommendation-section').classList.add('hidden');
                 document.getElementById('match-details').classList.remove('visible');
+                resetRecommendationState();
             });
         }
 
@@ -1684,17 +1773,52 @@
             return purposeLabels[state.purpose] || state.purpose;
         }
 
-        function getFieldText() {
-            if (state.field === 'other-field') {
-                return state.fieldCustom;
+        function getTargetFieldFromPreferences() {
+            if (state.targetPrefs.field === 'other') {
+                return state.targetPrefs.fieldCustom?.trim() || '';
             }
-            return fieldLabels[state.field] || state.field;
+            return state.targetPrefs.field || '';
+        }
+
+        function getFieldText() {
+            const prefField = getTargetFieldFromPreferences();
+            if (prefField) return prefField;
+
+            const manualField = document.getElementById('target-field')?.value.trim();
+            if (manualField) return manualField;
+
+            if (state.selectedTargets.length > 0) {
+                const lastTarget = state.selectedTargets[state.selectedTargets.length - 1];
+                return lastTarget.field || lastTarget.position || '';
+            }
+            return 'your field';
+        }
+
+        function updateFindMatchesEnabled() {
+            const btn = document.getElementById('btn-find-matches');
+            if (!btn) return;
+            btn.disabled = !getTargetFieldFromPreferences();
+        }
+
+        function resetRecommendationState() {
+            state.recommendations = [];
+            state.selectedTargets = [];
+            updateSelectedTargetsUI();
+            
+            const list = document.getElementById('recommendation-list');
+            const actions = document.getElementById('rec-actions');
+            const loading = document.getElementById('rec-loading');
+            const details = document.getElementById('match-details');
+            if (list) list.innerHTML = '';
+            if (actions) actions.style.display = 'none';
+            if (loading) loading.classList.remove('visible');
+            if (details) details.classList.remove('visible');
+            checkStep3Valid();
         }
 
         function checkStep1Valid() {
             const purposeValid = state.purpose && (state.purpose !== 'other' || state.purposeCustom.trim());
-            const fieldValid = state.field && (state.field !== 'other-field' || state.fieldCustom.trim());
-            document.getElementById('btn-step1-next').disabled = !(purposeValid && fieldValid);
+            document.getElementById('btn-step1-next').disabled = !purposeValid;
         }
 
         function checkStep2Valid() {

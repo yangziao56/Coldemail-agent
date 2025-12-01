@@ -42,6 +42,11 @@
 **线上地址**: https://coldemail-agent.onrender.com/
 **密码**: gogogochufalo
 
+### v2.1 - 目标偏好问卷 & Field 下沉到 Step 3
+- Step 1 只保留 purpose，移除 field 选择
+- Step 3 选择“找匹配”时新增 5 个偏好问题：领域/专长（必选）、层级、组织类型、外展目标、知名度偏好
+- 推荐生成：`find_target_recommendations` 使用 purpose + 偏好 + 领域提示词由 Gemini 产出候选人；搜索仍只用名字 + 领域
+
 ---
 
 ## 2. 核心抽象（以后都尽量不改）

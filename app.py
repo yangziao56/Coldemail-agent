@@ -277,12 +277,18 @@ def api_find_recommendations():
     purpose = data.get('purpose', '').strip()
     field = data.get('field', '').strip()
     sender_profile = data.get('sender_profile', {})
+    preferences = data.get('preferences', {}) or {}
     
     if not purpose or not field:
         return jsonify({'error': 'Purpose and field are required'}), 400
     
     try:
-        recommendations = find_target_recommendations(purpose, field, sender_profile)
+        recommendations = find_target_recommendations(
+            purpose,
+            field,
+            sender_profile,
+            preferences=preferences
+        )
         return jsonify({
             'success': True,
             'recommendations': recommendations

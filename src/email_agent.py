@@ -459,6 +459,7 @@ def find_target_recommendations(
     purpose: str,
     field: str,
     sender_profile: dict | None = None,
+    preferences: dict | None = None,
     *,
     model: str = DEFAULT_MODEL,
     count: int = 10
@@ -472,6 +473,7 @@ def find_target_recommendations(
         sender_profile: Optional sender profile for better matching
         model: Gemini model to use
         count: Number of recommendations to generate
+        preferences: Optional targeting preferences (seniority, org type, outreach goal, prominence)
         
     Returns:
         List of recommendation dictionaries
@@ -485,11 +487,28 @@ Sender background:
 - Skills: {', '.join(sender_profile.get('skills', [])[:5]) or 'Not specified'}
 """
 
+    pref_context = ""
+    if preferences:
+        pref_lines: list[str] = []
+        pref_map = {
+            "seniority": "Seniority target",
+            "org_type": "Organization type",
+            "outreach_goal": "Outreach goal",
+            "prominence": "Desired prominence"
+        }
+        for key, label in pref_map.items():
+            value = preferences.get(key)
+            if isinstance(value, str) and value.strip():
+                pref_lines.append(f"{label}: {value.strip()}")
+        if pref_lines:
+            pref_context = "Additional targeting hints:\n" + "\n".join(f"- {line}" for line in pref_lines) + "\n"
+
     prompt = f"""You are a networking advisor helping someone find the best people to reach out to.
 
 Purpose: {purpose}
 Field: {field}
 {profile_context}
+{pref_context}
 
 Generate a list of {count} real, notable people who would be good targets for this outreach.
 Focus on well-known figures who are:
