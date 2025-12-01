@@ -10,7 +10,7 @@ import google.generativeai as genai
 from openai import OpenAI
 from PyPDF2 import PdfReader
 
-from config import DEFAULT_MODEL, RECOMMENDATION_MODEL
+from config import DEFAULT_MODEL, RECOMMENDATION_MODEL, USE_OPENAI_WEB_SEARCH
 
 
 @dataclass
@@ -243,6 +243,35 @@ def _call_openai_json(prompt: str, *, model: str) -> str:
             {"role": "system", "content": "You are a concise assistant that returns strict JSON only."},
             {"role": "user", "content": prompt},
         ],
+        temperature=0.4,
+        response_format={"type": "json_object"},
+    )
+    content = response.choices[0].message.content
+    if not content:
+        raise RuntimeError("OpenAI response did not contain any content")
+    return content
+
+
+def _call_openai_json_with_web_search(prompt: str, *, model: str) -> str:
+    """
+    Call OpenAI chat completion with built-in web_search tool support.
+    """
+    client = _get_openai_client()
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a concise research assistant. "
+                    "Use the web_search tool to gather real names and facts before answering. "
+                    "Respond with strict JSON only."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
+        tools=[{"type": "web_search"}],
+        tool_choice="auto",
         temperature=0.4,
         response_format={"type": "json_object"},
     )
@@ -517,21 +546,30 @@ def _build_recommendation_prompt(
     profile_context: str,
     pref_context: str,
     count: int,
-    web_text: str,
-    sources: list[str],
+    web_text: str = "",
+    sources: list[str] | None = None,
     include_web_section: bool = True,
+    require_tool_use: bool = False,
 ) -> str:
     source_block = ""
     if include_web_section and web_text:
         source_block = f"\nUse the following web research snippets to ground your recommendations (cite sources when relevant):\n{web_text}"
     sources_list = "\n".join(f"- {s}" for s in sources) if sources else ""
 
+    tool_hint = ""
+    if require_tool_use:
+        tool_hint = (
+            "\nYou have access to a web_search tool. "
+            "Search the web to find real, recent people that fit the criteria. "
+            "Do not rely only on prior knowledge; prefer names that appear in search results."
+        )
+
     return f"""You are a networking advisor helping someone find the best people to reach out to.
 
 Purpose: {purpose}
 Field: {field}
 {profile_context}
-{pref_context}{source_block}
+{pref_context}{source_block}{tool_hint}
 
 Return a JSON object with key "recommendations" containing a list of {count} people. Each item must have:
 - name (string)
@@ -621,7 +659,29 @@ def find_target_recommendations(
     pref_context = _build_preference_context(preferences)
     profile_context = _build_sender_context(sender_profile)
 
-    # Try OpenAI (gpt-5.1) with web context first
+    # Try OpenAI (gpt-5.1) with built-in web_search tool
+    if USE_OPENAI_WEB_SEARCH:
+        try:
+            content = _call_openai_json_with_web_search(
+                _build_recommendation_prompt(
+                    purpose=purpose,
+                    field=field,
+                    profile_context=profile_context,
+                    pref_context=pref_context,
+                    count=count,
+                    include_web_section=False,
+                    require_tool_use=True,
+                ),
+                model=RECOMMENDATION_MODEL,
+            )
+            recommendations = json.loads(content).get("recommendations", [])
+            recommendations.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+            if recommendations:
+                return recommendations[:count]
+        except Exception as e:
+            print(f"OpenAI recommendation (web_search) error: {e}")
+
+    # Fallback 1: our own web scrape + OpenAI
     try:
         web_text, web_sources = _gather_recommendation_web_context(field, purpose, preferences, max_pages=3)
         content = _call_openai_json(
@@ -633,6 +693,8 @@ def find_target_recommendations(
                 count=count,
                 web_text=web_text,
                 sources=web_sources,
+                include_web_section=True,
+                require_tool_use=False,
             ),
             model=RECOMMENDATION_MODEL,
         )
@@ -641,9 +703,9 @@ def find_target_recommendations(
         if recommendations:
             return recommendations[:count]
     except Exception as e:
-        print(f"OpenAI recommendation error: {e}")
+        print(f"OpenAI recommendation (scrape fallback) error: {e}")
 
-    # Fallback to Gemini text-only generation
+    # Fallback 2: Gemini text-only generation
     prompt = _build_recommendation_prompt(
         purpose=purpose,
         field=field,
