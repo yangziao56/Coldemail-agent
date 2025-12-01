@@ -9,8 +9,7 @@ from typing import TYPE_CHECKING, Any
 import google.generativeai as genai
 from PyPDF2 import PdfReader
 
-# Default model for Gemini
-DEFAULT_MODEL = "gemini-2.0-flash"
+from config import DEFAULT_MODEL
 
 
 @dataclass

@@ -12,8 +12,7 @@ import google.generativeai as genai
 import requests
 from bs4 import BeautifulSoup
 
-# Default model for Gemini
-DEFAULT_MODEL = "gemini-2.0-flash"
+from config import DEFAULT_MODEL
 
 
 @dataclass
