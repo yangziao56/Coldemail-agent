@@ -814,7 +814,7 @@
         <!-- Step 1: Purpose -->
         <div class="panel" id="step-1">
             <h2><span class="icon">🎯</span> Step 1: What's Your Purpose?</h2>
-            <p class="panel-description">Select the type of outreach you want to make.</p>
+            <p class="panel-description">Select the type of outreach you want to make and specify your field.</p>
             
             <div class="form-group">
                 <label>What do you want to achieve?</label>
@@ -842,6 +842,35 @@
                 </div>
                 <div class="custom-input" id="purpose-custom">
                     <input type="text" id="purpose-custom-input" placeholder="Describe your purpose...">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>What field are you interested in?</label>
+                <div class="option-cards" id="field-options">
+                    <div class="option-card" data-value="ai-ml">
+                        <div class="icon">🤖</div>
+                        <div class="title">AI / Machine Learning</div>
+                        <div class="desc">Artificial Intelligence, Deep Learning, NLP</div>
+                    </div>
+                    <div class="option-card" data-value="software">
+                        <div class="icon">💻</div>
+                        <div class="title">Software Engineering</div>
+                        <div class="desc">Web, Mobile, Systems, Cloud</div>
+                    </div>
+                    <div class="option-card" data-value="finance">
+                        <div class="icon">📈</div>
+                        <div class="title">Finance / Fintech</div>
+                        <div class="desc">Banking, Investment, Quantitative Finance</div>
+                    </div>
+                    <div class="option-card" data-value="other-field">
+                        <div class="icon">🔬</div>
+                        <div class="title">Other Field</div>
+                        <div class="desc">Specify your field below</div>
+                    </div>
+                </div>
+                <div class="custom-input" id="field-custom">
+                    <input type="text" id="field-custom-input" placeholder="Enter your field...">
                 </div>
             </div>
 
@@ -1161,6 +1190,8 @@
             step: 1,
             purpose: null,
             purposeCustom: '',
+            field: null,
+            fieldCustom: '',
             targetPrefs: {
                 field: '',
                 fieldCustom: '',
@@ -1188,6 +1219,14 @@
             'job': 'Job Seeking (employment opportunities)',
             'coffee': 'Coffee Chat (networking and learning)',
             'other': ''
+        };
+
+        // Field labels for better display
+        const fieldLabels = {
+            'ai-ml': 'AI / Machine Learning',
+            'software': 'Software Engineering',
+            'finance': 'Finance / Fintech',
+            'other-field': ''
         };
 
         // Initialize
@@ -1219,9 +1258,32 @@
                     checkStep1Valid();
                 });
             });
+
+            // Field options
+            document.querySelectorAll('#field-options .option-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('#field-options .option-card').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    state.field = this.dataset.value;
+                    
+                    const customInput = document.getElementById('field-custom');
+                    if (state.field === 'other-field') {
+                        customInput.classList.add('visible');
+                    } else {
+                        customInput.classList.remove('visible');
+                    }
+                    checkStep1Valid();
+                });
+            });
+
             // Custom input listeners
             document.getElementById('purpose-custom-input').addEventListener('input', function() {
                 state.purposeCustom = this.value;
+                checkStep1Valid();
+            });
+
+            document.getElementById('field-custom-input').addEventListener('input', function() {
+                state.fieldCustom = this.value;
                 checkStep1Valid();
             });
         }
@@ -2081,6 +2143,15 @@
         }
 
         function getFieldText() {
+            // Priority 1: Use Step 1 field selection
+            if (state.field) {
+                if (state.field === 'other-field') {
+                    return state.fieldCustom || 'your field';
+                }
+                return fieldLabels[state.field] || state.field;
+            }
+            
+            // Priority 2: Use preference field (for recommendations)
             const prefField = getTargetFieldFromPreferences();
             if (prefField) return prefField;
 
@@ -2118,7 +2189,15 @@
 
         function checkStep1Valid() {
             const purposeValid = state.purpose && (state.purpose !== 'other' || state.purposeCustom.trim());
-            document.getElementById('btn-step1-next').disabled = !purposeValid;
+            const fieldValid = state.field && (state.field !== 'other-field' || state.fieldCustom.trim());
+            document.getElementById('btn-step1-next').disabled = !(purposeValid && fieldValid);
+        }
+
+        function getFieldLabel() {
+            if (state.field === 'other-field') {
+                return state.fieldCustom;
+            }
+            return fieldLabels[state.field] || state.field;
         }
 
         function checkStep2Valid() {
