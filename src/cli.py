@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from .email_agent import ReceiverProfile, SenderProfile, generate_email
+from config import DEFAULT_MODEL
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--goal", required=True, help="Goal for this email (e.g., request for a 20-min chat)")
     parser.add_argument(
         "--model",
-        default="gemini-2.0-flash",
+        default=DEFAULT_MODEL,
         help="Gemini model to use (default: gemini-2.0-flash)",
     )
     return parser.parse_args()

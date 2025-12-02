@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import google.generativeai as genai
+from openai import OpenAI
 from PyPDF2 import PdfReader
 
-# Default model for Gemini
-DEFAULT_MODEL = "gemini-2.0-flash"
+from config import DEFAULT_MODEL, RECOMMENDATION_MODEL, USE_OPENAI_WEB_SEARCH
 
 
 @dataclass
@@ -225,6 +225,60 @@ def _call_gemini(prompt: str, *, model: str = DEFAULT_MODEL, json_mode: bool = F
     if not response.text:
         raise RuntimeError("Gemini response did not contain any content")
     return response.text
+
+
+def _get_openai_client() -> OpenAI:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable is required for OpenAI models")
+    return OpenAI(api_key=api_key)
+
+
+def _call_openai_json(prompt: str, *, model: str) -> str:
+    """Call OpenAI chat completion and return the response text."""
+    client = _get_openai_client()
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": "You are a concise assistant that returns strict JSON only."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.4,
+        response_format={"type": "json_object"},
+    )
+    content = response.choices[0].message.content
+    if not content:
+        raise RuntimeError("OpenAI response did not contain any content")
+    return content
+
+
+def _call_openai_json_with_web_search(prompt: str, *, model: str) -> str:
+    """
+    Call OpenAI chat completion with built-in web_search tool support.
+    """
+    client = _get_openai_client()
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a concise research assistant. "
+                    "Use the web_search tool to gather real names and facts before answering. "
+                    "Respond with strict JSON only."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
+        tools=[{"type": "web_search"}],
+        tool_choice="auto",
+        temperature=0.4,
+        response_format={"type": "json_object"},
+    )
+    content = response.choices[0].message.content
+    if not content:
+        raise RuntimeError("OpenAI response did not contain any content")
+    return content
 
 
 def extract_profile_from_text(
@@ -455,10 +509,135 @@ Return JSON only."""
         }
 
 
+def _build_sender_context(sender_profile: dict | None) -> str:
+    if not sender_profile:
+        return ""
+    return f"""
+Sender background:
+- Education: {', '.join(sender_profile.get('education', [])[:3]) or 'Not specified'}
+- Experience: {', '.join(sender_profile.get('experiences', [])[:3]) or 'Not specified'}
+- Skills: {', '.join(sender_profile.get('skills', [])[:5]) or 'Not specified'}
+"""
+
+
+def _build_preference_context(preferences: dict | None) -> str:
+    if not preferences:
+        return ""
+    pref_lines: list[str] = []
+    pref_map = {
+        "seniority": "Seniority target",
+        "org_type": "Organization type",
+        "outreach_goal": "Outreach goal",
+        "prominence": "Desired prominence",
+    }
+    for key, label in pref_map.items():
+        value = preferences.get(key)
+        if isinstance(value, str) and value.strip():
+            pref_lines.append(f"{label}: {value.strip()}")
+    if not pref_lines:
+        return ""
+    return "Additional targeting hints:\n" + "\n".join(f"- {line}" for line in pref_lines) + "\n"
+
+
+def _build_recommendation_prompt(
+    *,
+    purpose: str,
+    field: str,
+    profile_context: str,
+    pref_context: str,
+    count: int,
+    web_text: str = "",
+    sources: list[str] | None = None,
+    include_web_section: bool = True,
+    require_tool_use: bool = False,
+) -> str:
+    source_block = ""
+    if include_web_section and web_text:
+        source_block = f"\nUse the following web research snippets to ground your recommendations (cite sources when relevant):\n{web_text}"
+    sources_list = "\n".join(f"- {s}" for s in sources) if sources else ""
+
+    tool_hint = ""
+    if require_tool_use:
+        tool_hint = (
+            "\nYou have access to a web_search tool. "
+            "Search the web to find real, recent people that fit the criteria. "
+            "Do not rely only on prior knowledge; prefer names that appear in search results."
+        )
+
+    return f"""You are a networking advisor helping someone find the best people to reach out to.
+
+Purpose: {purpose}
+Field: {field}
+{profile_context}
+{pref_context}{source_block}{tool_hint}
+
+Return a JSON object with key "recommendations" containing a list of {count} people. Each item must have:
+- name (string)
+- position (string)
+- field (string)
+- match_score (integer 60-95)
+- match_reason (short string)
+- common_interests (short string)
+{"- sources (list of URLs) summarizing where this person appeared in web snippets" if include_web_section else ""}
+
+Focus on people who fit the purpose and preferences; prefer those visible in the web snippets. Be diverse and mix accessible profiles, not only famous leaders.
+If unsure about someone, omit them.
+Include source URLs when available.
+Return JSON only."""
+
+
+def _gather_recommendation_web_context(
+    field: str,
+    purpose: str,
+    preferences: dict | None,
+    max_pages: int = 3,
+) -> tuple[str, list[str]]:
+    """
+    Light web scrape to ground recommendations; uses DuckDuckGo/Bing HTML paths via WebScraper.
+    """
+    try:
+        from .web_scraper import WebScraper
+    except ImportError:
+        from web_scraper import WebScraper  # type: ignore
+
+    scraper = WebScraper()
+    query_name = field or purpose or "targets"
+    query_field = purpose or field or ""
+
+    search_results = scraper.search_person(query_name, query_field, max_results=max_pages + 2)
+    if not search_results:
+        return "", []
+
+    all_text: list[str] = []
+    sources: list[str] = []
+
+    snippet_text = "\n".join(
+        f"- {r.title}: {r.snippet}"
+        for r in search_results
+        if r.snippet
+    )
+    if snippet_text:
+        all_text.append(f"Search snippets:\n{snippet_text}")
+
+    pages_fetched = 0
+    for result in search_results:
+        if pages_fetched >= max_pages:
+            break
+        content = scraper.fetch_page_content(result.url)
+        if content and len(content) > 200:
+            all_text.append(f"--- Source: {result.url} ---\n{content[:4000]}")
+            sources.append(result.url)
+            pages_fetched += 1
+
+    combined_text = "\n\n".join(all_text)
+    return combined_text, sources
+
+
 def find_target_recommendations(
     purpose: str,
     field: str,
     sender_profile: dict | None = None,
+    preferences: dict | None = None,
     *,
     model: str = DEFAULT_MODEL,
     count: int = 10
@@ -472,68 +651,92 @@ def find_target_recommendations(
         sender_profile: Optional sender profile for better matching
         model: Gemini model to use
         count: Number of recommendations to generate
+        preferences: Optional targeting preferences (seniority, org type, outreach goal, prominence)
         
     Returns:
         List of recommendation dictionaries
     """
-    profile_context = ""
-    if sender_profile:
-        profile_context = f"""
-Sender background:
-- Education: {', '.join(sender_profile.get('education', [])[:3]) or 'Not specified'}
-- Experience: {', '.join(sender_profile.get('experiences', [])[:3]) or 'Not specified'}
-- Skills: {', '.join(sender_profile.get('skills', [])[:5]) or 'Not specified'}
-"""
+    pref_context = _build_preference_context(preferences)
+    profile_context = _build_sender_context(sender_profile)
 
-    prompt = f"""You are a networking advisor helping someone find the best people to reach out to.
+    # Try OpenAI (gpt-5.1) with built-in web_search tool
+    if USE_OPENAI_WEB_SEARCH:
+        try:
+            content = _call_openai_json_with_web_search(
+                _build_recommendation_prompt(
+                    purpose=purpose,
+                    field=field,
+                    profile_context=profile_context,
+                    pref_context=pref_context,
+                    count=count,
+                    include_web_section=False,
+                    require_tool_use=True,
+                ),
+                model=RECOMMENDATION_MODEL,
+            )
+            recommendations = json.loads(content).get("recommendations", [])
+            recommendations.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+            if recommendations:
+                return recommendations[:count]
+        except Exception as e:
+            print(f"OpenAI recommendation (web_search) error: {e}")
 
-Purpose: {purpose}
-Field: {field}
-{profile_context}
+    # Fallback 1: our own web scrape + OpenAI
+    try:
+        web_text, web_sources = _gather_recommendation_web_context(field, purpose, preferences, max_pages=3)
+        content = _call_openai_json(
+            _build_recommendation_prompt(
+                purpose=purpose,
+                field=field,
+                profile_context=profile_context,
+                pref_context=pref_context,
+                count=count,
+                web_text=web_text,
+                sources=web_sources,
+                include_web_section=True,
+                require_tool_use=False,
+            ),
+            model=RECOMMENDATION_MODEL,
+        )
+        recommendations = json.loads(content).get("recommendations", [])
+        recommendations.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+        if recommendations:
+            return recommendations[:count]
+    except Exception as e:
+        print(f"OpenAI recommendation (scrape fallback) error: {e}")
 
-Generate a list of {count} real, notable people who would be good targets for this outreach.
-Focus on well-known figures who are:
-- Active and influential in the specified field
-- Appropriate for the stated purpose
-- Likely to be receptive to professional outreach
-
-Return a JSON array with this structure:
-[
-    {{
-        "name": "Full Name",
-        "position": "Current Position/Title",
-        "field": "Their specific area",
-        "match_score": 85,
-        "match_reason": "Why they're a good match",
-        "common_interests": "Potential common ground with the sender"
-    }},
-    ...
-]
-
-The match_score should be 60-95 based on how well they fit the purpose and field.
-Include a mix of highly prominent and more accessible people.
-
-Return JSON only, no other text."""
-
+    # Fallback 2: Gemini text-only generation
+    prompt = _build_recommendation_prompt(
+        purpose=purpose,
+        field=field,
+        profile_context=profile_context,
+        pref_context=pref_context,
+        count=count,
+        web_text="",
+        sources=[],
+        include_web_section=False,
+    )
     content = _call_gemini(prompt, model=model, json_mode=True)
     
     try:
-        recommendations = json.loads(content)
-        # Sort by match score
+        recommendations = json.loads(content).get("recommendations", [])
         recommendations.sort(key=lambda x: x.get('match_score', 0), reverse=True)
-        return recommendations[:count]
+        if recommendations:
+            return recommendations[:count]
     except json.JSONDecodeError:
-        # Return some default recommendations based on field
-        return [
-            {
-                "name": "Contact in " + field,
-                "position": "Professional",
-                "field": field,
-                "match_score": 70,
-                "match_reason": "Relevant to your field",
-                "common_interests": "Shared interest in " + field
-            }
-        ]
+        pass
+
+    # Final fallback
+    return [
+        {
+            "name": "Contact in " + field,
+            "position": "Professional",
+            "field": field,
+            "match_score": 70,
+            "match_reason": "Relevant to your field",
+            "common_interests": "Shared interest in " + field
+        }
+    ]
 
 
 def parse_text_to_profile(
