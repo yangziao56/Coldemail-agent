@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import os
 import re
-from dataclasses import dataclass
+import logging
+from dataclasses import dataclass, field
+from typing import Any
 from urllib.parse import quote_plus
 
 import google.generativeai as genai
@@ -33,7 +35,14 @@ class ScrapedPersonInfo:
     experiences: list[str]
     skills: list[str]
     projects: list[str]
-    sources: list[str]
+    honors: list[str] = field(default_factory=list)
+    activities: list[str] = field(default_factory=list)
+    contact_email: str | None = None
+    papers: list[dict[str, Any]] = field(default_factory=list)
+    sources: list[str] = field(default_factory=list)
+
+
+logger = logging.getLogger(__name__)
 
 
 class WebScraper:
@@ -46,7 +55,7 @@ class WebScraper:
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         ),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.5",
     }
 
     def __init__(self, timeout: int = 15):
@@ -58,13 +67,46 @@ class WebScraper:
         """Search for a person using multiple search engines."""
         query = f"{name} {field}"
         
-        # Try DuckDuckGo first
-        results = self._search_duckduckgo(query, max_results)
+        # Prefer Google CSE if configured, then Bing, Google HTML, then DDG
+        results = self._search_google_api(query, max_results)
+
+        if not results:
+            results = self._search_bing(query, max_results)
+
+        if not results:
+            # Try Google HTML (may be blocked in some regions)
+            results = self._search_google(query, max_results)
         
         if not results:
-            # Fallback: try Bing
-            results = self._search_bing(query, max_results)
+            # Fallback: try DuckDuckGo
+            results = self._search_duckduckgo(query, max_results)
         
+        logger.info("[search] query=%s results=%d", query, len(results))
+        
+        return results
+
+    def _search_google_api(self, query: str, max_results: int) -> list[WebSearchResult]:
+        """Search using Google Custom Search API if configured."""
+        results: list[WebSearchResult] = []
+        api_key = os.environ.get("GOOGLE_SEARCH_KEY") or os.environ.get("GOOGLE_CSE_KEY")
+        cx = os.environ.get("GOOGLE_CX") or os.environ.get("GOOGLE_CSE_CX")
+        if not api_key or not cx:
+            return results
+        try:
+            url = "https://www.googleapis.com/customsearch/v1"
+            params = {"q": query, "key": api_key, "cx": cx, "num": max_results}
+            resp = self.session.get(url, params=params, timeout=self.timeout)
+            resp.raise_for_status()
+            data = resp.json()
+            items = data.get("items") or []
+            for item in items[:max_results]:
+                title = item.get("title", "")
+                link = item.get("link", "")
+                snippet = item.get("snippet", "")
+                if title and link:
+                    results.append(WebSearchResult(title=title, url=str(link), snippet=snippet))
+        except Exception as e:
+            print(f"Google CSE error: {e}")
         return results
 
     def _search_duckduckgo(self, query: str, max_results: int) -> list[WebSearchResult]:
@@ -75,6 +117,10 @@ class WebScraper:
             url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
+            
+            # If DDG returns anomaly/challenge page, skip
+            if response.status_code != 200 or "anomaly" in response.text or "challenge-form" in response.text:
+                return []
             
             soup = BeautifulSoup(response.text, "html.parser")
             
@@ -98,20 +144,46 @@ class WebScraper:
         
         return results
 
+    def _search_google(self, query: str, max_results: int) -> list[WebSearchResult]:
+        """Fallback search using Google HTML (may be blocked in some regions)."""
+        results: list[WebSearchResult] = []
+        try:
+            url = f"https://www.google.com/search?q={quote_plus(query)}&hl=zh-CN"
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+            if response.status_code != 200:
+                return []
+
+            soup = BeautifulSoup(response.text, "html.parser")
+            # Google SERP structure varies; we look for h3 within result blocks.
+            for g in soup.select("div.g")[:max_results]:
+                title_elem = g.select_one("h3")
+                link_elem = g.select_one("a")
+                if title_elem and link_elem:
+                    title = title_elem.get_text(strip=True)
+                    href = link_elem.get("href", "")
+                    snippet_elem = g.select_one("span.aCOpRe") or g.select_one("div.VwiC3b")
+                    snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
+                    results.append(WebSearchResult(title=title, url=str(href), snippet=snippet))
+        except Exception as e:
+            print(f"Google search error: {e}")
+        return results
+
     def _search_bing(self, query: str, max_results: int) -> list[WebSearchResult]:
         """Fallback search using Bing."""
         results: list[WebSearchResult] = []
         
         try:
-            url = f"https://www.bing.com/search?q={quote_plus(query)}"
+            url = f"https://www.bing.com/search?q={quote_plus(query)}&mkt=zh-CN&ensearch=0&FORM=HDRSC1"
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.text, "html.parser")
             
-            for result_li in soup.select(".b_algo")[:max_results]:
-                title_elem = result_li.select_one("h2 a")
-                snippet_elem = result_li.select_one(".b_caption p")
+            candidates = soup.select(".b_algo") or soup.select("li.b_algo") or soup.select("div.b_algo")
+            for result_li in candidates[:max_results]:
+                title_elem = result_li.select_one("h2 a") or result_li.select_one("a")
+                snippet_elem = result_li.select_one(".b_caption p") or result_li.select_one("p")
                 
                 if title_elem:
                     title = title_elem.get_text(strip=True)
@@ -196,6 +268,83 @@ class WebScraper:
         return combined_text, sources
 
 
+def _enrich_papers_with_crossref(papers: list[dict[str, Any]], timeout: int = 10) -> list[dict[str, Any]]:
+    """Fetch abstract and metadata from CrossRef using DOI or title."""
+    if not papers:
+        return []
+    
+    session = requests.Session()
+    enriched: list[dict[str, Any]] = []
+    
+    for paper in papers:
+        if not isinstance(paper, dict):
+            continue  # skip non-dict items
+        paper_copy = {**paper}
+        doi = str(paper.get("doi") or "").strip()
+        title = str(paper.get("title") or "").strip()
+        if doi.lower() == "none":
+            doi = ""
+
+        url = None
+        if doi:
+            url = f"https://api.crossref.org/works/{quote_plus(doi)}"
+        elif title:
+            url = f"https://api.crossref.org/works?query.title={quote_plus(title)}&rows=1"
+        
+        if not url:
+            enriched.append(paper_copy)
+            continue
+        
+        try:
+            resp = session.get(url, timeout=timeout)
+            resp.raise_for_status()
+            data = resp.json()
+            item = None
+            if "message" in data:
+                item = data["message"]
+                # query endpoint returns a list
+                if isinstance(item, dict) and "items" in item and isinstance(item["items"], list) and item["items"]:
+                    item = item["items"][0]
+            if not isinstance(item, dict):
+                enriched.append(paper_copy)
+                continue
+            
+            if not doi:
+                paper_copy["doi"] = item.get("DOI", "") or paper_copy.get("doi", "")
+            if not paper_copy.get("url"):
+                urls = item.get("URL") or ""
+                paper_copy["url"] = urls
+            # Abstract may come in HTML-ish tags
+            abstract = item.get("abstract", "")
+            if abstract:
+                cleaned = re.sub(r"<[^>]+>", "", abstract)
+                paper_copy["abstract"] = cleaned.strip()
+            else:
+                # Try short description
+                paper_copy["abstract"] = paper_copy.get("abstract", "")
+            # Fill missing title/year/venue if available
+            if not paper_copy.get("title") and item.get("title"):
+                if isinstance(item.get("title"), list):
+                    paper_copy["title"] = item["title"][0]
+                else:
+                    paper_copy["title"] = item["title"]
+            if not paper_copy.get("year") and item.get("issued", {}).get("date-parts"):
+                year = item["issued"]["date-parts"][0][0]
+                paper_copy["year"] = str(year)
+            if not paper_copy.get("venue") and item.get("container-title"):
+                container = item.get("container-title")
+                if isinstance(container, list) and container:
+                    paper_copy["venue"] = container[0]
+                elif isinstance(container, str):
+                    paper_copy["venue"] = container
+        except Exception as exc:
+            print(f"CrossRef lookup failed for {title or doi}: {exc}")
+        
+        enriched.append(paper_copy)
+    
+    return enriched
+
+
 def _configure_gemini() -> None:
     """Configure Gemini API with the API key from environment."""
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
@@ -214,8 +363,8 @@ def extract_person_profile_from_web(
     max_pages: int = 3,
 ) -> ScrapedPersonInfo:
     """
-    Get information about a person using Gemini's knowledge.
-    Falls back to web scraping if needed.
+    Get information about a person using web search + scraped pages.
+    Priority: scrape top search results, then use Gemini only for structuring.
     
     Args:
         name: The person's name
@@ -228,75 +377,16 @@ def extract_person_profile_from_web(
     """
     _configure_gemini()
     
-    # First, try to get information directly from Gemini's knowledge
-    prompt = f"""You are a research assistant. Please provide detailed, factual information about {name} who works in the field of {field}.
-
-Return a JSON object with the following structure:
-{{
-    "name": "Full name of the person",
-    "found": true or false (whether you have reliable information about this person),
-    "education": ["list of educational background - degrees, universities, years"],
-    "experiences": ["list of work experiences - companies, positions, notable roles"],
-    "skills": ["list of technical skills and expertise areas"],
-    "projects": ["list of notable projects, research papers, companies founded, achievements"],
-    "summary": "A brief 2-3 sentence summary about this person and their contributions"
-}}
-
-Important:
-- If this is a well-known person (like Elon Musk, Andrew Ng, etc.), you should have information about them.
-- Only set "found" to false if you truly have no information about this person.
-- Include real, verifiable information only.
-- Do not make up information.
-
-Return JSON only."""
-
-    try:
-        gemini_model = genai.GenerativeModel(
-            model,
-            generation_config={"response_mime_type": "application/json"}
-        )
-        response = gemini_model.generate_content(prompt)
-        
-        content = response.text
-        if not content:
-            raise RuntimeError("Gemini response did not contain any content")
-        
-        profile_data = json.loads(content)
-        
-        # Check if Gemini found information
-        if profile_data.get("found", False):
-            def get_str_list(data: dict, key: str) -> list[str]:
-                value = data.get(key, [])
-                if not isinstance(value, list):
-                    return []
-                return [str(item).strip() for item in value if item and str(item).strip()]
-            
-            summary = profile_data.get("summary", "")
-            raw_text = f"Summary: {summary}" if summary else f"Information about {name} in {field}"
-            
-            return ScrapedPersonInfo(
-                name=profile_data.get("name", name).strip() or name,
-                field=field,
-                raw_text=raw_text,
-                education=get_str_list(profile_data, "education"),
-                experiences=get_str_list(profile_data, "experiences"),
-                skills=get_str_list(profile_data, "skills"),
-                projects=get_str_list(profile_data, "projects"),
-                sources=["Gemini AI Knowledge Base"],
-            )
-    except Exception as e:
-        print(f"Gemini knowledge extraction error: {e}")
-    
-    # Fallback: try web scraping
+    # Priority: web scraping (DuckDuckGo/Bing -> open top pages)
     try:
         scraper = WebScraper()
         raw_text, sources = scraper.scrape_person_info(name, field, max_pages=max_pages)
         
         if raw_text.strip():
-            # Use Gemini to extract structured info from scraped content
+            logger.info("[scrape] name=%s field=%s text_len=%d sources=%s", name, field, len(raw_text), sources)
             return _extract_from_scraped_text(name, field, raw_text, sources, model)
     except Exception as e:
-        print(f"Web scraping fallback error: {e}")
+        print(f"Web scraping error: {e}")
     
     # Final fallback: return basic info so user can still proceed
     return ScrapedPersonInfo(
@@ -321,17 +411,20 @@ def _extract_from_scraped_text(
     """Extract structured profile from scraped text using Gemini."""
     prompt = (
         "You are an expert at extracting structured profile information about a person from web content. "
-        "Extract accurate information only - do not make up or guess information that isn't clearly stated. "
-        "Return strict JSON with the keys: "
-        "name (string - the person's full name), "
-        "education (list of strings - degrees, institutions, years if available), "
-        "experiences (list of strings - work experience, positions, affiliations), "
-        "skills (list of strings - technical skills, expertise areas), "
-        "projects (list of strings - notable projects, research, publications, achievements). "
-        "If information for a category is not found, return an empty list for that category.\n\n"
+        "Extract accurate, non-hallucinated information only. "
+        "Return strict JSON with keys:\n"
+        "- name (string)\n"
+        "- contact_email (string or null)\n"
+        "- education (list of strings)\n"
+        "- experiences (list of strings)\n"
+        "- skills (list of strings)\n"
+        "- projects (list of strings)\n"
+        "- honors (list of strings)\n"
+        "- activities (list of strings)\n"
+        "- papers (list of objects with keys: title, venue, year, doi, url)\n\n"
         f"Extract profile information for {name} (field: {field}) from the following web content:\n\n"
         f"{raw_text[:15000]}\n\n"
-        "Return JSON only with the structured profile."
+        "Return JSON only with the structured profile. If a field is unknown, use empty list or null."
     )
     
     gemini_model = genai.GenerativeModel(
@@ -345,14 +438,51 @@ def _extract_from_scraped_text(
         raise RuntimeError("Gemini response did not contain any content")
     
     profile_data = json.loads(content)
+    # Gemini 有时返回列表，取第一个 dict；若不是 dict，则视为无效
+    if isinstance(profile_data, list):
+        profile_data = profile_data[0] if profile_data and isinstance(profile_data[0], dict) else {}
+    if not isinstance(profile_data, dict):
+        raise RuntimeError("Gemini response is not a JSON object")
     
     def get_str_list(data: dict, key: str) -> list[str]:
+        if not isinstance(data, dict):
+            return []
         value = data.get(key, [])
         if not isinstance(value, list):
             return []
         return [str(item).strip() for item in value if item and str(item).strip()]
     
-    return ScrapedPersonInfo(
+    def get_papers(data: dict) -> list[dict[str, Any]]:
+        """Normalize papers to a list of dicts; accept strings as title-only."""
+        papers_raw = data.get("papers", [])
+        if not isinstance(papers_raw, list):
+            return []
+        cleaned: list[dict[str, Any]] = []
+        for item in papers_raw:
+            if isinstance(item, dict):
+                title = str(item.get("title", "")).strip()
+                venue = str(item.get("venue", "")).strip() if item.get("venue") else ""
+                year = str(item.get("year", "")).strip() if item.get("year") else ""
+                doi = str(item.get("doi", "")).strip()
+                url = str(item.get("url", "")).strip()
+                cleaned.append({
+                    "title": title,
+                    "venue": venue,
+                    "year": year,
+                    "doi": doi,
+                    "url": url,
+                })
+            elif isinstance(item, str) and item.strip():
+                cleaned.append({"title": item.strip(), "venue": "", "year": "", "doi": "", "url": ""})
+        return cleaned
+    
+    papers = get_papers(profile_data)
+    try:
+        papers = _enrich_papers_with_crossref(papers)
+    except Exception as e:
+        print(f"CrossRef enrichment error: {e}")
+    
+    structured = ScrapedPersonInfo(
         name=profile_data.get("name", name).strip() or name,
         field=field,
         raw_text=raw_text,
@@ -360,5 +490,29 @@ def _extract_from_scraped_text(
         experiences=get_str_list(profile_data, "experiences"),
         skills=get_str_list(profile_data, "skills"),
         projects=get_str_list(profile_data, "projects"),
+        honors=get_str_list(profile_data, "honors"),
+        activities=get_str_list(profile_data, "activities"),
+        contact_email=str(profile_data.get("contact_email")).strip() if profile_data.get("contact_email") else None,
+        papers=papers,
         sources=sources,
     )
+    logger.info(
+        "[scrape->struct] name=%s field=%s edu=%d exp=%d skills=%d projects=%d honors=%d activities=%d papers=%d sources=%d",
+        structured.name,
+        structured.field,
+        len(structured.education),
+        len(structured.experiences),
+        len(structured.skills),
+        len(structured.projects),
+        len(structured.honors),
+        len(structured.activities),
+        len(structured.papers),
+        len(structured.sources),
+    )
+    # Log paper titles and abstracts (if any) for debugging
+    if structured.papers:
+        titles = [p.get("title") for p in structured.papers]
+        abstracts = [p.get("abstract") for p in structured.papers]
+        logger.info("[papers] titles=%s", titles)
+        logger.info("[papers] abstracts=%s", abstracts)
+    return structured

@@ -2,9 +2,11 @@
 
 import os
 import tempfile
+import logging
 from pathlib import Path
 from functools import wraps
 
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 
 from src.email_agent import (
@@ -18,6 +20,10 @@ from src.email_agent import (
     regenerate_email_with_style,
 )
 from src.web_scraper import extract_person_profile_from_web
+
+# Basic logging setup so info-level scrape logs are visible in terminal
+logging.basicConfig(level=logging.INFO)
+load_dotenv()
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -103,11 +109,13 @@ def upload_sender_pdf():
         return jsonify({'error': 'File must be a PDF'}), 400
     
     try:
-        # Save to temp file and extract profile
+        # Save to temp file (close handle before reading to avoid Windows lock)
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
             pdf_file.save(tmp.name)
-            profile = extract_profile_from_pdf(Path(tmp.name))
-            os.unlink(tmp.name)  # Clean up temp file
+            tmp_path = Path(tmp.name)
+        
+        profile = extract_profile_from_pdf(tmp_path)
+        os.unlink(tmp_path)  # Clean up temp file
         
         # Cache the extracted profile
         session_id = request.form.get('session_id', 'default')
@@ -149,16 +157,35 @@ def search_receiver():
             field=field,
             max_pages=3,
         )
+        app.logger.info(
+            "[api/search-receiver] name=%s field=%s edu=%d exp=%d skills=%d projects=%d honors=%d activities=%d papers=%d sources=%s email=%s",
+            scraped_info.name,
+            scraped_info.field,
+            len(scraped_info.education),
+            len(scraped_info.experiences),
+            len(scraped_info.skills),
+            len(scraped_info.projects),
+            len(scraped_info.honors),
+            len(scraped_info.activities),
+            len(scraped_info.papers),
+            scraped_info.sources,
+            scraped_info.contact_email,
+        )
         
         return jsonify({
             'success': True,
             'profile': {
                 'name': scraped_info.name,
                 'field': scraped_info.field,
+                'raw_text': scraped_info.raw_text,
                 'education': scraped_info.education,
                 'experiences': scraped_info.experiences,
                 'skills': scraped_info.skills,
                 'projects': scraped_info.projects,
+                'honors': scraped_info.honors,
+                'activities': scraped_info.activities,
+                'contact_email': scraped_info.contact_email,
+                'papers': scraped_info.papers,
                 'sources': scraped_info.sources,
             }
         })
@@ -197,6 +224,10 @@ def api_generate_email():
             skills=receiver_data.get('skills', []),
             projects=receiver_data.get('projects', []),
             context=receiver_data.get('context', ''),
+            contact_email=receiver_data.get('contact_email'),
+            honors=receiver_data.get('honors', []),
+            activities=receiver_data.get('activities', []),
+            papers=receiver_data.get('papers', []),
         )
         
         # Get goal
@@ -293,61 +324,6 @@ def api_find_recommendations():
             'success': True,
             'recommendations': recommendations
         })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/upload-receiver-doc', methods=['POST'])
-@login_required
-def upload_receiver_doc():
-    """Upload and parse receiver document (PDF or text)."""
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
-    
-    uploaded_file = request.files['file']
-    if uploaded_file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    filename = uploaded_file.filename.lower()
-    name = request.form.get('name', '').strip()
-    field = request.form.get('field', '').strip()
-    
-    try:
-        if filename.endswith('.pdf'):
-            # Save to temp file and extract profile using existing function
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
-                uploaded_file.save(tmp.name)
-                profile = extract_profile_from_pdf(Path(tmp.name))
-                os.unlink(tmp.name)
-            
-            return jsonify({
-                'success': True,
-                'profile': {
-                    'name': name or profile.name,
-                    'field': field,
-                    'raw_text': profile.raw_text,
-                    'education': profile.education,
-                    'experiences': profile.experiences,
-                    'skills': profile.skills,
-                    'projects': profile.projects,
-                    'sources': ['Uploaded document'],
-                }
-            })
-        elif filename.endswith('.txt') or filename.endswith('.md'):
-            # Read text content directly
-            content = uploaded_file.read().decode('utf-8')
-            
-            # Use Gemini to parse the text content
-            from src.email_agent import parse_text_to_profile
-            profile = parse_text_to_profile(content, name, field)
-            
-            return jsonify({
-                'success': True,
-                'profile': profile
-            })
-        else:
-            return jsonify({'error': 'Unsupported file type. Please upload PDF, TXT, or MD file.'}), 400
-    
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

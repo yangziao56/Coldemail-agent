@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -73,6 +73,10 @@ class SenderProfile(ProfileBase):
 class ReceiverProfile(ProfileBase):
     context: str | None = None
     sources: list[str] | None = None  # Web sources if scraped from internet
+    contact_email: str | None = None
+    honors: list[str] = field(default_factory=list)
+    activities: list[str] = field(default_factory=list)
+    papers: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
     def from_json(cls, path: Path) -> "ReceiverProfile":
@@ -85,6 +89,10 @@ class ReceiverProfile(ProfileBase):
             skills=_load_str_list(data, "skills", path),
             projects=_load_str_list(data, "projects", path),
             context=data.get("context"),
+            contact_email=str(data.get("contact_email")).strip() if data.get("contact_email") else None,
+            honors=_load_str_list(data, "honors", path),
+            activities=_load_str_list(data, "activities", path),
+            papers=_load_papers(data, "papers", path),
         )
 
     @classmethod
@@ -147,6 +155,10 @@ class ReceiverProfile(ProfileBase):
             projects=scraped_info.projects,
             context=context.strip() if isinstance(context, str) and context.strip() else None,
             sources=scraped_info.sources,
+            contact_email=scraped_info.contact_email,
+            honors=scraped_info.honors,
+            activities=scraped_info.activities,
+            papers=scraped_info.papers,
         )
 
 
@@ -180,9 +192,32 @@ def _load_str_list(data: dict[str, Any], key: str, source: Path | str) -> list[s
     return cleaned
 
 
+def _load_papers(data: dict[str, Any], key: str, source: Path | str) -> list[dict[str, Any]]:
+    value = data.get(key, [])
+    if not isinstance(value, list):
+        return []
+    papers: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        paper = {
+            "title": str(item.get("title", "") or "").strip(),
+            "venue": str(item.get("venue", "") or "").strip(),
+            "year": str(item.get("year", "") or "").strip(),
+            "doi": str(item.get("doi", "") or "").strip(),
+            "url": str(item.get("url", "") or "").strip(),
+            "abstract": str(item.get("abstract", "") or "").strip(),
+        }
+        if any(paper.values()):
+            papers.append(paper)
+    return papers
+
+
 def extract_text_from_pdf(pdf_path: Path) -> str:
-    reader = PdfReader(str(pdf_path))
-    pages_text = [page.extract_text() or "" for page in reader.pages]
+    # Use context manager to ensure Windows releases the file handle before deletion
+    with pdf_path.open("rb") as f:
+        reader = PdfReader(f)
+        pages_text = [page.extract_text() or "" for page in reader.pages]
     combined = "\n".join(text.strip() for text in pages_text if text and text.strip())
     cleaned = combined.strip()
     if not cleaned:
@@ -352,6 +387,85 @@ def build_prompt(sender: SenderProfile, receiver: ReceiverProfile, goal: str) ->
             + _format_section("Experiences", receiver.experiences)
             + _format_section("Skills", receiver.skills)
             + _format_section("Projects", receiver.projects)
+            + "Receiver background (free text):\n"
+            + f"{receiver.raw_text}\n\n"
+            + f"Goal: {goal_text}\n\n"
+            + "Please return:\n"
+            + "1) A concise, specific subject line\n"
+            + "2) A short email body (max ~200 words) that feels human, references shared interests or context, and ends with a clear but polite call to action."
+        ),
+    }
+
+    return [system_message, user_message]
+
+
+# Override with richer receiver info (web-scraped + papers)
+def build_prompt(sender: SenderProfile, receiver: ReceiverProfile, goal: str) -> list[dict[str, str]]:
+    goal_text = goal.strip()
+    if not goal_text:
+        raise ValueError("Goal must be a non-empty string")
+
+    def _format_section(title: str, items: list[str]) -> str:
+        if not items:
+            return f"- {title}: (not specified)\n"
+        bullet_points = "\n".join(f"  - {item}" for item in items)
+        return f"- {title}:\n{bullet_points}\n"
+
+    def _format_papers(papers: list[dict[str, Any]]) -> str:
+        if not papers:
+            return "- Papers: (not specified)\n"
+        lines: list[str] = []
+        for paper in papers:
+            title = str(paper.get("title", "") or "").strip() or "Paper"
+            venue = str(paper.get("venue", "") or "").strip()
+            year = str(paper.get("year", "") or "").strip()
+            doi = str(paper.get("doi", "") or "").strip()
+            abstract = str(paper.get("abstract", "") or "").strip()
+            meta = " ".join(filter(None, [venue, year]))
+            line = f"  - {title}"
+            if meta:
+                line += f" ({meta})"
+            if doi:
+                line += f" | DOI: {doi}"
+            if abstract:
+                line += f"\n    Abstract: {abstract[:400]}"
+            lines.append(line)
+        return "- Papers:\n" + "\n".join(lines) + "\n"
+
+    system_message = {
+        "role": "system",
+        "content": (
+            "You craft sincere, concise first-contact cold emails that help two people build a genuine connection. "
+            "Use the provided sender and receiver details to highlight authentic overlaps and mutual value. "
+            "If a specific research area or detail is not present in the receiver info, skip it—never leave placeholder text. "
+            "Output a complete email with a Subject line and body that is ready to paste into an email client."
+        ),
+    }
+
+    user_message = {
+        "role": "user",
+        "content": (
+            "Sender profile:\n"
+            f"- Name: {sender.name}\n"
+            f"- Motivation: {sender.motivation}\n"
+            f"- Ask: {sender.ask}\n"
+            + _format_section("Education", sender.education)
+            + _format_section("Experiences", sender.experiences)
+            + _format_section("Skills", sender.skills)
+            + _format_section("Projects", sender.projects)
+            + "Sender background (free text):\n"
+            + f"{sender.raw_text}\n\n"
+            + "Receiver profile:\n"
+            + f"- Name: {receiver.name}\n"
+            + (f"- Contact: {receiver.contact_email}\n" if receiver.contact_email else "")
+            + (f"- Context: {receiver.context}\n" if receiver.context else "")
+            + _format_section("Education", receiver.education)
+            + _format_section("Experiences", receiver.experiences)
+            + _format_section("Skills", receiver.skills)
+            + _format_section("Projects", receiver.projects)
+            + _format_section("Honors", receiver.honors)
+            + _format_section("Activities", receiver.activities)
+            + _format_papers(receiver.papers)
             + "Receiver background (free text):\n"
             + f"{receiver.raw_text}\n\n"
             + f"Goal: {goal_text}\n\n"
@@ -737,75 +851,6 @@ def find_target_recommendations(
             "common_interests": "Shared interest in " + field
         }
     ]
-
-
-def parse_text_to_profile(
-    text_content: str,
-    name: str = "",
-    field: str = "",
-    *,
-    model: str = DEFAULT_MODEL
-) -> dict:
-    """
-    Parse text content (from uploaded TXT/MD file) into a profile structure.
-    
-    Args:
-        text_content: The text content to parse
-        name: Optional name (if not in text)
-        field: Optional field information
-        model: Gemini model to use
-        
-    Returns:
-        Dictionary with profile information
-    """
-    prompt = f"""Extract a structured profile from the following text content about a person.
-
-Text content:
-{text_content[:5000]}
-
-Additional context:
-- Name (if not found in text): {name or 'Unknown'}
-- Field: {field or 'Not specified'}
-
-Return a JSON object with this structure:
-{{
-    "name": "Person's name from text or the provided name",
-    "field": "Their field/domain",
-    "raw_text": "Brief summary of the text content",
-    "education": ["list of educational background"],
-    "experiences": ["list of work/research experience"],
-    "skills": ["list of skills and expertise"],
-    "projects": ["list of notable projects or publications"],
-    "sources": ["Uploaded document"]
-}}
-
-Extract as much relevant information as possible. Return JSON only."""
-
-    content = _call_gemini(prompt, model=model, json_mode=True)
-    
-    try:
-        profile = json.loads(content)
-        # Ensure required fields
-        profile.setdefault('name', name or 'Unknown')
-        profile.setdefault('field', field)
-        profile.setdefault('raw_text', text_content[:500])
-        profile.setdefault('education', [])
-        profile.setdefault('experiences', [])
-        profile.setdefault('skills', [])
-        profile.setdefault('projects', [])
-        profile.setdefault('sources', ['Uploaded document'])
-        return profile
-    except json.JSONDecodeError:
-        return {
-            "name": name or "Unknown",
-            "field": field,
-            "raw_text": text_content[:500],
-            "education": [],
-            "experiences": [],
-            "skills": [],
-            "projects": [],
-            "sources": ["Uploaded document"]
-        }
 
 
 def regenerate_email_with_style(

@@ -649,110 +649,6 @@
             display: none !important;
         }
 
-        /* Modal styles for target profile */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay.visible {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #667eea;
-        }
-
-        .modal-header h3 {
-            color: #333;
-            font-size: 1.3em;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-            transition: color 0.3s;
-        }
-
-        .modal-close:hover {
-            color: #333;
-        }
-
-        .profile-section {
-            margin-bottom: 20px;
-        }
-
-        .profile-section h4 {
-            color: #667eea;
-            font-size: 14px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .profile-section ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .profile-section li {
-            padding: 8px 12px;
-            background: #f8f9ff;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-size: 14px;
-            color: #555;
-        }
-
-        .profile-section p {
-            font-size: 14px;
-            color: #555;
-            line-height: 1.5;
-        }
-
-        .view-profile-btn {
-            background: none;
-            border: none;
-            color: #667eea;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: background 0.3s;
-        }
-
-        .view-profile-btn:hover {
-            background: rgba(102, 126, 234, 0.1);
-        }
-
         /* Responsive */
         @media (max-width: 768px) {
             .option-cards {
@@ -782,7 +678,7 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>📧 Cold Email Generator <span class="version-badge">v2.1</span></h1>
+            <h1>📧 Cold Email Generator <span class="version-badge">v2</span></h1>
             <a href="/logout" class="btn-logout">Logout</a>
         </div>
 
@@ -814,7 +710,7 @@
         <!-- Step 1: Purpose -->
         <div class="panel" id="step-1">
             <h2><span class="icon">🎯</span> Step 1: What's Your Purpose?</h2>
-            <p class="panel-description">Select the type of outreach you want to make and specify your field.</p>
+            <p class="panel-description">Select the type of outreach you want to make.</p>
             
             <div class="form-group">
                 <label>What do you want to achieve?</label>
@@ -842,35 +738,6 @@
                 </div>
                 <div class="custom-input" id="purpose-custom">
                     <input type="text" id="purpose-custom-input" placeholder="Describe your purpose...">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>What field are you interested in?</label>
-                <div class="option-cards" id="field-options">
-                    <div class="option-card" data-value="ai-ml">
-                        <div class="icon">🤖</div>
-                        <div class="title">AI / Machine Learning</div>
-                        <div class="desc">Artificial Intelligence, Deep Learning, NLP</div>
-                    </div>
-                    <div class="option-card" data-value="software">
-                        <div class="icon">💻</div>
-                        <div class="title">Software Engineering</div>
-                        <div class="desc">Web, Mobile, Systems, Cloud</div>
-                    </div>
-                    <div class="option-card" data-value="finance">
-                        <div class="icon">📈</div>
-                        <div class="title">Finance / Fintech</div>
-                        <div class="desc">Banking, Investment, Quantitative Finance</div>
-                    </div>
-                    <div class="option-card" data-value="other-field">
-                        <div class="icon">🔬</div>
-                        <div class="title">Other Field</div>
-                        <div class="desc">Specify your field below</div>
-                    </div>
-                </div>
-                <div class="custom-input" id="field-custom">
-                    <input type="text" id="field-custom-input" placeholder="Enter your field...">
                 </div>
             </div>
 
@@ -1024,22 +891,12 @@
                     <input type="text" id="target-name" placeholder="e.g., Andrew Ng">
                 </div>
                 <div class="form-group">
-                    <label>Target's Field / Position</label>
-                    <input type="text" id="target-field" placeholder="e.g., AI Professor at Stanford">
+                    <label>School / Institution (optional)</label>
+                    <input type="text" id="target-school" placeholder="e.g., Stanford University">
                 </div>
                 <div class="form-group">
-                    <label>Upload Target's Document (Optional)</label>
-                    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">📎 Upload a PDF, TXT, or MD file with information about this person</p>
-                    <input type="file" id="target-doc-file" accept=".pdf,.txt,.md">
-                </div>
-                <div class="loading hidden" id="target-doc-loading">
-                    <div class="spinner"></div>
-                    <div class="loading-text">Analyzing document...</div>
-                </div>
-                <div class="hidden" id="target-doc-success">
-                    <div class="notice" style="background: #d4edda; border-color: #28a745; color: #155724;">
-                        <span class="icon">✅</span> Document analyzed! Profile info extracted.
-                    </div>
+                    <label>Target's Field / Position (optional)</label>
+                    <input type="text" id="target-field" placeholder="e.g., AI Professor, Computer Vision">
                 </div>
             </div>
 
@@ -1111,7 +968,8 @@
             <div class="hidden" id="email-result">
                 <div id="target-info" style="margin-bottom: 20px; padding: 15px; background: #f8f9ff; border-radius: 10px;">
                     <strong>To:</strong> <span id="email-target-name">-</span><br>
-                    <strong>Field:</strong> <span id="email-target-field">-</span>
+                    <strong>Field:</strong> <span id="email-target-field">-</span><br>
+                    <strong>School:</strong> <span id="email-target-school">-</span>
                 </div>
                 <div class="email-output" id="email-content">
                     <!-- Email content will be displayed here -->
@@ -1143,55 +1001,12 @@
         </div>
     </div>
 
-    <!-- Target Profile Modal -->
-    <div class="modal-overlay" id="profile-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-target-name">Target Profile</h3>
-                <button class="modal-close" onclick="closeProfileModal()">×</button>
-            </div>
-            <div class="profile-section">
-                <h4>🎯 Position</h4>
-                <p id="modal-position">-</p>
-            </div>
-            <div class="profile-section">
-                <h4>📊 Match Score</h4>
-                <p id="modal-match-score">-</p>
-            </div>
-            <div class="profile-section">
-                <h4>🎓 Education</h4>
-                <ul id="modal-education"><li>-</li></ul>
-            </div>
-            <div class="profile-section">
-                <h4>💼 Experience</h4>
-                <ul id="modal-experience"><li>-</li></ul>
-            </div>
-            <div class="profile-section">
-                <h4>🛠️ Skills</h4>
-                <ul id="modal-skills"><li>-</li></ul>
-            </div>
-            <div class="profile-section">
-                <h4>📂 Projects</h4>
-                <ul id="modal-projects"><li>-</li></ul>
-            </div>
-            <div class="profile-section">
-                <h4>💡 Why This Match</h4>
-                <p id="modal-match-reason">-</p>
-            </div>
-            <div class="btn-group" style="justify-content: center;">
-                <button class="btn btn-primary" onclick="selectFromModal()">✅ Select This Target</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         // Global state
         const state = {
             step: 1,
             purpose: null,
             purposeCustom: '',
-            field: null,
-            fieldCustom: '',
             targetPrefs: {
                 field: '',
                 fieldCustom: '',
@@ -1208,9 +1023,7 @@
             currentEmailIndex: 0,  // Current email being viewed
             recommendations: [],
             generatedEmails: [],  // Array of {target, email} objects
-            regenerateStyle: null,
-            manualTargetProfile: null,  // Profile from uploaded document
-            currentModalTarget: null  // Target being viewed in modal
+            regenerateStyle: null
         };
 
         // Purpose field mapping for better prompts
@@ -1221,14 +1034,6 @@
             'other': ''
         };
 
-        // Field labels for better display
-        const fieldLabels = {
-            'ai-ml': 'AI / Machine Learning',
-            'software': 'Software Engineering',
-            'finance': 'Finance / Fintech',
-            'other-field': ''
-        };
-
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             setupOptionCards();
@@ -1236,7 +1041,6 @@
             setupFileUpload();
             setupNavigationButtons();
             setupRegenerate();
-            setupTargetDocUpload();
             setupPreferenceForm();
         });
 
@@ -1258,32 +1062,9 @@
                     checkStep1Valid();
                 });
             });
-
-            // Field options
-            document.querySelectorAll('#field-options .option-card').forEach(card => {
-                card.addEventListener('click', function() {
-                    document.querySelectorAll('#field-options .option-card').forEach(c => c.classList.remove('selected'));
-                    this.classList.add('selected');
-                    state.field = this.dataset.value;
-                    
-                    const customInput = document.getElementById('field-custom');
-                    if (state.field === 'other-field') {
-                        customInput.classList.add('visible');
-                    } else {
-                        customInput.classList.remove('visible');
-                    }
-                    checkStep1Valid();
-                });
-            });
-
             // Custom input listeners
             document.getElementById('purpose-custom-input').addEventListener('input', function() {
                 state.purposeCustom = this.value;
-                checkStep1Valid();
-            });
-
-            document.getElementById('field-custom-input').addEventListener('input', function() {
-                state.fieldCustom = this.value;
                 checkStep1Valid();
             });
         }
@@ -1336,6 +1117,8 @@
             // Manual target inputs
             document.getElementById('target-name').addEventListener('input', checkStep3Valid);
             document.getElementById('target-field').addEventListener('input', checkStep3Valid);
+            const targetSchoolInput = document.getElementById('target-school');
+            if (targetSchoolInput) targetSchoolInput.addEventListener('input', checkStep3Valid);
         }
 
         // Setup preference questions for recommendations
@@ -1430,129 +1213,6 @@
                 alert('Error uploading resume: ' + error.message);
             }
         }
-
-        // Setup target document upload
-        function setupTargetDocUpload() {
-            document.getElementById('target-doc-file').addEventListener('change', async function() {
-                if (this.files.length > 0) {
-                    const file = this.files[0];
-                    await uploadTargetDoc(file);
-                }
-            });
-        }
-
-        // Upload and analyze target document
-        async function uploadTargetDoc(file) {
-            const loading = document.getElementById('target-doc-loading');
-            const success = document.getElementById('target-doc-success');
-            
-            loading.classList.remove('hidden');
-            success.classList.add('hidden');
-            
-            const name = document.getElementById('target-name').value.trim();
-            const field = document.getElementById('target-field').value.trim();
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('name', name);
-            formData.append('field', field);
-            
-            try {
-                const response = await fetch('/api/upload-receiver-doc', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    state.manualTargetProfile = data.profile;
-                    loading.classList.add('hidden');
-                    success.classList.remove('hidden');
-                    
-                    // Auto-fill name and field if empty
-                    if (!name && data.profile.name) {
-                        document.getElementById('target-name').value = data.profile.name;
-                    }
-                    if (!field && data.profile.field) {
-                        document.getElementById('target-field').value = data.profile.field;
-                    }
-                    
-                    checkStep3Valid();
-                } else {
-                    throw new Error(data.error || 'Upload failed');
-                }
-            } catch (error) {
-                loading.classList.add('hidden');
-                alert('Error uploading document: ' + error.message);
-            }
-        }
-
-        // Open profile modal for a recommendation
-        function openProfileModal(index) {
-            const rec = state.recommendations[index];
-            if (!rec) return;
-            
-            state.currentModalTarget = { index, rec };
-            
-            document.getElementById('modal-target-name').textContent = rec.name;
-            document.getElementById('modal-position').textContent = rec.position || rec.field || '-';
-            document.getElementById('modal-match-score').innerHTML = `<span style="color: ${rec.match_score >= 80 ? '#28a745' : rec.match_score >= 60 ? '#ffc107' : '#dc3545'}; font-weight: bold;">${rec.match_score}%</span> compatibility`;
-            document.getElementById('modal-match-reason').textContent = rec.match_reason || '-';
-            
-            // Show education, experience, skills, projects if available (fetched profile)
-            const eduList = document.getElementById('modal-education');
-            const expList = document.getElementById('modal-experience');
-            const skillList = document.getElementById('modal-skills');
-            const projList = document.getElementById('modal-projects');
-            
-            if (rec.education && rec.education.length) {
-                eduList.innerHTML = rec.education.map(e => `<li>${e}</li>`).join('');
-            } else {
-                eduList.innerHTML = '<li style="color: #999;">Will be fetched when generating email</li>';
-            }
-            
-            if (rec.experiences && rec.experiences.length) {
-                expList.innerHTML = rec.experiences.map(e => `<li>${e}</li>`).join('');
-            } else {
-                expList.innerHTML = '<li style="color: #999;">Will be fetched when generating email</li>';
-            }
-            
-            if (rec.skills && rec.skills.length) {
-                skillList.innerHTML = rec.skills.map(s => `<li>${s}</li>`).join('');
-            } else {
-                skillList.innerHTML = '<li style="color: #999;">Will be fetched when generating email</li>';
-            }
-            
-            if (rec.projects && rec.projects.length) {
-                projList.innerHTML = rec.projects.map(p => `<li>${p}</li>`).join('');
-            } else {
-                projList.innerHTML = '<li style="color: #999;">Will be fetched when generating email</li>';
-            }
-            
-            document.getElementById('profile-modal').classList.add('visible');
-        }
-
-        // Close profile modal
-        function closeProfileModal() {
-            document.getElementById('profile-modal').classList.remove('visible');
-            state.currentModalTarget = null;
-        }
-
-        // Select target from modal
-        function selectFromModal() {
-            if (state.currentModalTarget) {
-                toggleRecommendation(state.currentModalTarget.index);
-                closeProfileModal();
-            }
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('profile-modal')?.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeProfileModal();
-            }
-        });
 
         // Load questionnaire
         async function loadQuestionnaire() {
@@ -1719,14 +1379,11 @@
                         <div class="rec-name">${rec.name}</div>
                         <div class="rec-field">${rec.position || rec.field}</div>
                     </div>
-                    <button class="view-profile-btn" onclick="event.stopPropagation(); openProfileModal(${index})">📋 View</button>
                     <div class="rec-match ${matchClass}">${rec.match_score}% Match</div>
                 `;
                 
                 item.addEventListener('click', function(e) {
-                    if (!e.target.classList.contains('view-profile-btn')) {
-                        toggleRecommendation(index);
-                    }
+                    toggleRecommendation(index);
                 });
                 
                 list.appendChild(item);
@@ -1832,17 +1489,11 @@
             document.getElementById('btn-step3-next').addEventListener('click', async function() {
                 if (state.hasTarget) {
                     // Get target info from input fields - single manual target
-                    const targetData = {
+                    state.selectedTargets = [{
                         name: document.getElementById('target-name').value,
+                        school: document.getElementById('target-school').value,
                         field: document.getElementById('target-field').value
-                    };
-                    
-                    // Merge with uploaded document profile if available
-                    if (state.manualTargetProfile) {
-                        Object.assign(targetData, state.manualTargetProfile);
-                    }
-                    
-                    state.selectedTargets = [targetData];
+                    }];
                 }
                 goToStep(4);
                 await generateAllEmails();
@@ -1955,21 +1606,16 @@
                     const target = state.selectedTargets[i];
                     progress.textContent = `(${i + 1}/${total}: ${target.name})`;
                     
-                    // Search for receiver info if needed (only if no uploaded profile data)
+                    // Search for receiver info if needed
                     let receiverProfile = target;
                     
-                    // Check if target already has profile data (from uploaded document or has detailed info)
-                    const hasProfileData = target.education && target.education.length > 0 ||
-                                          target.experiences && target.experiences.length > 0 ||
-                                          target.raw_text;
-                    
-                    if (!hasProfileData) {
+                    if (!receiverProfile.education) {
                         const searchResponse = await fetch('/api/search-receiver', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 name: target.name,
-                                field: target.field || target.position || getFieldText()
+                                field: (target.field || target.position || target.school || getFieldText()).trim()
                             })
                         });
                         const searchData = await searchResponse.json();
@@ -2034,6 +1680,7 @@
             
             document.getElementById('email-target-name').textContent = current.target.name;
             document.getElementById('email-target-field').textContent = current.target.field || current.target.position || getFieldText();
+            document.getElementById('email-target-school').textContent = current.target.school || '-';
             document.getElementById('email-content').textContent = current.email;
             document.getElementById('current-email-num').textContent = state.currentEmailIndex + 1;
             
@@ -2143,15 +1790,6 @@
         }
 
         function getFieldText() {
-            // Priority 1: Use Step 1 field selection
-            if (state.field) {
-                if (state.field === 'other-field') {
-                    return state.fieldCustom || 'your field';
-                }
-                return fieldLabels[state.field] || state.field;
-            }
-            
-            // Priority 2: Use preference field (for recommendations)
             const prefField = getTargetFieldFromPreferences();
             if (prefField) return prefField;
 
@@ -2189,15 +1827,7 @@
 
         function checkStep1Valid() {
             const purposeValid = state.purpose && (state.purpose !== 'other' || state.purposeCustom.trim());
-            const fieldValid = state.field && (state.field !== 'other-field' || state.fieldCustom.trim());
-            document.getElementById('btn-step1-next').disabled = !(purposeValid && fieldValid);
-        }
-
-        function getFieldLabel() {
-            if (state.field === 'other-field') {
-                return state.fieldCustom;
-            }
-            return fieldLabels[state.field] || state.field;
+            document.getElementById('btn-step1-next').disabled = !purposeValid;
         }
 
         function checkStep2Valid() {
@@ -2225,8 +1855,8 @@
             let valid = false;
             if (state.hasTarget) {
                 const name = document.getElementById('target-name').value.trim();
-                const field = document.getElementById('target-field').value.trim();
-                valid = name && field;
+                // Field is optional; require only name when user already knows who to contact
+                valid = !!name;
             } else if (state.selectedTargets.length > 0) {
                 valid = true;
             }

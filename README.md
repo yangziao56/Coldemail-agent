@@ -6,19 +6,7 @@ An intelligent cold email generation tool with a step-by-step wizard interface.
 
 ## Features
 
-### v2.1 (Current) - Enhanced Target Management 🆕
-
-- **Manual Target Document Upload**
-  - Upload PDF, TXT, or MD files with target's information
-  - Auto-extracts profile data using AI
-  - Skips web search when document is provided
-
-- **Target Profile Preview**
-  - Click "📋 View" to see detailed profile before selecting
-  - View match score, position, education, experience, skills, projects
-  - Select target directly from the profile modal
-
-### v2.0 - Web Interface with Smart Wizard
+### v2 (Current) - Web Interface with Smart Wizard 🆕
 
 - **Step 1: Purpose Selection**
   - 4 purpose categories: Academic Outreach 🎓, Job Seeking 💼, Coffee Chat ☕, Other ✨
@@ -32,10 +20,8 @@ An intelligent cold email generation tool with a step-by-step wizard interface.
 
 - **Step 3: Find Targets**
   - Manual input: Enter name and field directly
-  - **NEW**: Upload target's document (PDF/TXT/MD)
   - AI Recommendations: Get top 10 matching contacts based on your profile
-    - **NEW**: Click "📋 View" to see target profile
-    - Multi-select targets for batch email generation
+    - Click any person to see match analysis
     - Options to generate more or add manually
 
 - **Step 4: Generate & Customize Email**
@@ -45,7 +31,6 @@ An intelligent cold email generation tool with a step-by-step wizard interface.
     - ✂️ More Concise
     - 📝 More Detailed
     - ✏️ Custom instructions
-  - Copy individual or all emails
 
 ### v1.x - CLI Tool
 

@@ -50,6 +50,18 @@
 ### v2.2 - 模型配置集中管理
 - 新增 `config.py` 统一 `DEFAULT_MODEL`（可用环境变量 `GEMINI_MODEL` 覆盖），`email_agent.py`/`web_scraper.py`/`cli.py` 引用同一配置
 
+### v2.3 - 搜索/数据/Prompt 更新
+- 搜索项展: 优先 Google CSE API (`GOOGLE_SEARCH_KEY`/`GOOGLE_CX`)，再 Bing HTML，最后 Google/ DDG HTML（检查 challenge 并跳过）；`Accept-Language` 调为 zh-CN
+- Step3 手动目标: 增加学校/机构输入，Field 可选
+- 导师资料: 抓取 raw_text + education/experiences/skills/projects + honors/activities + email + papers，Prompt 加 honors/activities/papers 并指令无数据不占位
+- PDF 上传: temp 文件先关闭手柄，防 Windows 文件锁
+- 调试: logger 显示 `[scrape]`/`[scrape->struct]` 及 `[papers] titles/abstracts` 便于查看
+- Prompt 优化: 无数据直接留空，减少 placeholder 残留
+
+## 运行 & 环境变量
+- 在项目根目录放 `.env`，常用键：`APP_PASSWORD`（登录密码）、`APP_VERSION`（默认 v2）、`GEMINI_API_KEY`、`GOOGLE_SEARCH_KEY`/`GOOGLE_CX`（Google CSE 搜索）、可选 `OPENAI_API_KEY`，以及 `PORT`、`FLASK_ENV`
+- `app.py` 已 `load_dotenv()`，启动前激活虚拟环境即可读取 `.env`
+
 ---
 
 ## 2. 核心抽象（以后都尽量不改）

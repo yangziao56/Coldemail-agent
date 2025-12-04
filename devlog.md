@@ -1,51 +1,5 @@
 # Development Log
 
-## 2025-12-02: v2.1 - Enhanced Target Management 🆕
-
-### New Features
-
-- **Manual Target Document Upload**
-  - Support for PDF, TXT, and MD file uploads when manually adding targets
-  - AI-powered profile extraction from uploaded documents
-  - Auto-fills name and field from extracted data
-  - Skips web search for targets with uploaded documents (uses local data)
-
-- **Target Profile Preview Modal**
-  - "📋 View" button on each recommended target
-  - Modal shows: name, position, match score, education, experience, skills, projects, match reason
-  - "Select This Target" button to add directly from modal
-  - Click outside modal to close
-
-### Modified Files
-
-- `app.py`:
-  - Added `/api/upload-receiver-doc` endpoint for target document upload
-  - Supports PDF (using existing PDF parser) and TXT/MD (using Gemini)
-
-- `src/email_agent.py`:
-  - Added `parse_text_to_profile()`: Parse text content into structured profile
-
-- `templates/index_v2.html`:
-  - Version badge updated to v2.1
-  - Added file upload input in manual target section
-  - Added profile modal HTML and styles
-  - Updated JavaScript:
-    - `setupTargetDocUpload()`: Handle target document uploads
-    - `uploadTargetDoc()`: Upload and process target documents
-    - `openProfileModal()`: Display target profile in modal
-    - `closeProfileModal()`: Close the modal
-    - `selectFromModal()`: Select target from modal view
-    - `renderRecommendations()`: Added "View" button to each recommendation
-    - Updated `generateAllEmails()`: Skip web search if profile data exists
-
-### UI Improvements
-- Modal overlay with smooth animations
-- Profile sections with icons (🎯 Position, 📊 Match Score, 🎓 Education, etc.)
-- Loading state for document analysis
-- Success message after document upload
-
----
-
 ## 2025-11-29: v2.0 - Web Interface with Smart Wizard 🎉
 
 ### New Features
