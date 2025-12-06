@@ -806,6 +806,11 @@
                 <div class="step-connector" id="connector-3"></div>
                 <div class="step" id="step-indicator-4">
                     <span class="step-number">4</span>
+                    <span>Template</span>
+                </div>
+                <div class="step-connector" id="connector-4"></div>
+                <div class="step" id="step-indicator-5">
+                    <span class="step-number">5</span>
                     <span>Generate</span>
                 </div>
             </div>
@@ -1089,17 +1094,33 @@
             </div>
         </div>
 
-        <!-- Step 4: Generate Email -->
+        <!-- Step 4: Choose Template / Mode -->
         <div class="panel hidden" id="step-4">
-            <h2><span class="icon">✉️</span> Step 4: Your Cold Emails</h2>
-            <p class="panel-description">Here are your personalized cold emails ready to send!</p>
+            <h2><span class="icon">🧩</span> Step 4: Email Style & Template</h2>
+            <p class="panel-description">Choose whether to let the AI write freely or follow your own template.</p>
 
-            <!-- Optional custom email template -->
             <div class="form-group">
-                <label for="email-template">Optional: Provide your own email template</label>
+                <label>How do you want to generate your emails?</label>
+                <div class="option-cards" id="generation-mode-options">
+                    <div class="option-card" data-value="smart">
+                        <div class="icon">🤖</div>
+                        <div class="title">Smart AI Email</div>
+                        <div class="desc">Let the AI write the full email based on your profile and the target's profile.</div>
+                    </div>
+                    <div class="option-card" data-value="template">
+                        <div class="icon">✏️</div>
+                        <div class="title">Use My Template</div>
+                        <div class="desc">Provide a template and the AI will follow its structure and tone.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optional custom email template (only for template mode) -->
+            <div class="form-group hidden" id="email-template-section">
+                <label for="email-template">Your email template</label>
                 <p style="margin: 4px 0 8px; font-size: 13px; color: #666;">
-                    If you paste a template here, the AI will follow its structure and tone while filling in details
-                    using your profile and the target's profile. Leave empty to let the AI write emails freely.
+                    Paste a template here if you selected <strong>Use My Template</strong>. The AI will keep its structure and tone,
+                    and fill in details using your profile and the target's profile.
                 </p>
                 <textarea id="email-template" rows="6" placeholder="Example:
 Subject: Coffee chat about {{field}}
@@ -1110,6 +1131,17 @@ I&apos;m {{sender_name}}, currently ...
 
 ..."></textarea>
             </div>
+
+            <div class="btn-group">
+                <button class="btn btn-secondary" id="btn-step4-back">← Back to Targets</button>
+                <button class="btn btn-primary" id="btn-step4-next" disabled>Generate Emails →</button>
+            </div>
+        </div>
+
+        <!-- Step 5: Generate Email -->
+        <div class="panel hidden" id="step-5">
+            <h2><span class="icon">✉️</span> Step 5: Your Cold Emails</h2>
+            <p class="panel-description">Here are your personalized cold emails ready to send!</p>
 
             <!-- Email Navigation for Multiple Targets -->
             <div class="hidden" id="email-nav" style="margin-bottom: 20px;">
@@ -1151,7 +1183,7 @@ I&apos;m {{sender_name}}, currently ...
                 </div>
 
                 <div class="btn-group">
-                    <button class="btn btn-secondary" id="btn-step4-back">← Back to Targets</button>
+                    <button class="btn btn-secondary" id="btn-step5-back">← Back to Template</button>
                     <button class="btn btn-secondary" id="btn-copy-email">📋 Copy Current</button>
                     <button class="btn btn-secondary" id="btn-copy-all">📋 Copy All Emails</button>
                     <button class="btn btn-primary" id="btn-new-email">✨ Start Over</button>
@@ -1225,6 +1257,7 @@ I&apos;m {{sender_name}}, currently ...
             currentEmailIndex: 0,  // Current email being viewed
             recommendations: [],
             generatedEmails: [],  // Array of {target, email} objects
+            generationMode: null,  // 'smart' or 'template'
             regenerateStyle: null,
             manualTargetProfile: null,  // Profile from uploaded document
             currentModalTarget: null  // Target being viewed in modal
@@ -1252,6 +1285,7 @@ I&apos;m {{sender_name}}, currently ...
             setupChoiceButtons();
             setupFileUpload();
             setupNavigationButtons();
+            setupGenerationMode();
             setupRegenerate();
             setupTargetDocUpload();
             setupPreferenceForm();
@@ -1862,12 +1896,22 @@ I&apos;m {{sender_name}}, currently ...
                     state.selectedTargets = [targetData];
                 }
                 goToStep(4);
+            });
+
+            // Step 4 Back (from template/mode selection to targets)
+            document.getElementById('btn-step4-back').addEventListener('click', function() {
+                goToStep(3);
+            });
+
+            // Step 4 -> Step 5 (generate emails)
+            document.getElementById('btn-step4-next').addEventListener('click', async function() {
+                goToStep(5);
                 await generateAllEmails();
             });
 
-            // Step 4 Back
-            document.getElementById('btn-step4-back').addEventListener('click', function() {
-                goToStep(3);
+            // Step 5 Back (from generated emails to template/mode selection)
+            document.getElementById('btn-step5-back').addEventListener('click', function() {
+                goToStep(4);
             });
 
             // Copy current email to clipboard
@@ -1998,19 +2042,24 @@ I&apos;m {{sender_name}}, currently ...
                     }
                     
                     // Generate email
+                    const bodyPayload = {
+                        sender: {
+                            ...state.senderProfile,
+                            motivation: getPurposeText(),
+                            ask: `I am looking to ${getPurposeText().toLowerCase()} in ${getFieldText()}`
+                        },
+                        receiver: receiverProfile,
+                        goal: getPurposeText()
+                    };
+
+                    if (state.generationMode === 'template' && templateText) {
+                        bodyPayload.template = templateText;
+                    }
+
                     const response = await fetch('/api/generate-email', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            sender: {
-                                ...state.senderProfile,
-                                motivation: getPurposeText(),
-                                ask: `I am looking to ${getPurposeText().toLowerCase()} in ${getFieldText()}`
-                            },
-                            receiver: receiverProfile,
-                            goal: getPurposeText(),
-                            template: templateText || undefined
-                        })
+                        body: JSON.stringify(bodyPayload)
                     });
                     
                     const data = await response.json();
@@ -2081,6 +2130,47 @@ I&apos;m {{sender_name}}, currently ...
             });
 
             document.getElementById('btn-regenerate').addEventListener('click', regenerateEmail);
+        }
+
+        // Setup generation mode (smart vs template)
+        function setupGenerationMode() {
+            const modeCards = document.querySelectorAll('#generation-mode-options .option-card');
+            const templateSection = document.getElementById('email-template-section');
+            const templateInput = document.getElementById('email-template');
+            const nextBtn = document.getElementById('btn-step4-next');
+
+            function updateNextEnabled() {
+                if (!state.generationMode) {
+                    nextBtn.disabled = true;
+                    return;
+                }
+                if (state.generationMode === 'template') {
+                    const text = templateInput ? templateInput.value.trim() : '';
+                    nextBtn.disabled = !text;
+                } else {
+                    nextBtn.disabled = false;
+                }
+            }
+
+            modeCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    modeCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    state.generationMode = this.dataset.value;
+
+                    if (state.generationMode === 'template') {
+                        templateSection.classList.remove('hidden');
+                    } else {
+                        templateSection.classList.add('hidden');
+                    }
+
+                    updateNextEnabled();
+                });
+            });
+
+            if (templateInput) {
+                templateInput.addEventListener('input', updateNextEnabled);
+            }
         }
 
         // Regenerate current email with new style
@@ -2255,10 +2345,10 @@ I&apos;m {{sender_name}}, currently ...
 
         function goToStep(stepNum) {
             // Hide all steps
-            for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= 5; i++) {
                 document.getElementById(`step-${i}`).classList.add('hidden');
                 document.getElementById(`step-indicator-${i}`).classList.remove('active', 'completed');
-                if (i < 4) {
+                if (i < 5) {
                     document.getElementById(`connector-${i}`).classList.remove('completed');
                 }
             }
