@@ -931,6 +931,19 @@
                 </div>
             </div>
 
+            <!-- Optional sender profile link & notes -->
+            <div class="form-group">
+                <label>Optional: Your LinkedIn or profile link</label>
+                <input type="text" id="sender-profile-link" placeholder="e.g., https://www.linkedin.com/in/your-name or personal website">
+            </div>
+            <div class="form-group">
+                <label>Optional: Paste key info from your profile</label>
+                <p style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                    You can paste your LinkedIn “About” section, headline, or any highlights you want the AI to see.
+                </p>
+                <textarea id="sender-profile-extra" rows="3" placeholder="Paste a short description, headline, or key points from your profile..."></textarea>
+            </div>
+
             <div class="btn-group">
                 <button class="btn btn-secondary" id="btn-step2-back">← Back</button>
                 <button class="btn btn-primary" id="btn-step2-next" disabled>Next Step →</button>
@@ -1031,6 +1044,17 @@
                 <div class="form-group">
                     <label>Target's Field / Position</label>
                     <input type="text" id="target-field" placeholder="e.g., AI Professor at Stanford">
+                </div>
+                <div class="form-group">
+                    <label>Optional: Target's LinkedIn or profile link</label>
+                    <input type="text" id="target-profile-link" placeholder="e.g., LinkedIn, lab page, personal website">
+                </div>
+                <div class="form-group">
+                    <label>Optional: Paste key info about this target</label>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 8px;">
+                        You can paste a short bio, summary, or key points from their profile to give the AI more context.
+                    </p>
+                    <textarea id="target-profile-extra" rows="3" placeholder="Paste a short bio, key projects, or notes about this person..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>Upload Target's Document (Optional)</label>
@@ -1257,6 +1281,10 @@ I&apos;m {{sender_name}}, currently ...
             currentEmailIndex: 0,  // Current email being viewed
             recommendations: [],
             generatedEmails: [],  // Array of {target, email} objects
+            senderProfileLink: '',
+            senderProfileExtra: '',
+            targetProfileLink: '',
+            targetProfileExtra: '',
             generationMode: null,  // 'smart' or 'template'
             regenerateStyle: null,
             manualTargetProfile: null,  // Profile from uploaded document
@@ -1284,6 +1312,7 @@ I&apos;m {{sender_name}}, currently ...
             setupOptionCards();
             setupChoiceButtons();
             setupFileUpload();
+            setupProfileLinkInputs();
             setupNavigationButtons();
             setupGenerationMode();
             setupRegenerate();
@@ -2019,7 +2048,7 @@ I&apos;m {{sender_name}}, currently ...
                     progress.textContent = `(${i + 1}/${total}: ${target.name})`;
                     
                     // Search for receiver info if needed (only if no uploaded profile data)
-                    let receiverProfile = target;
+                    let receiverProfile = { ...target };
                     
                     // Check if target already has profile data (from uploaded document or has detailed info)
                     const hasProfileData = target.education && target.education.length > 0 ||
@@ -2041,10 +2070,33 @@ I&apos;m {{sender_name}}, currently ...
                         }
                     }
                     
+                    // Enrich sender and receiver context with optional profile links/notes
+                    let senderRawText = (state.senderProfile && state.senderProfile.raw_text) || '';
+                    const senderLink = (state.senderProfileLink || '').trim();
+                    const senderExtra = (state.senderProfileExtra || '').trim();
+                    if (senderLink) {
+                        senderRawText += `\n\nProfile link: ${senderLink}`;
+                    }
+                    if (senderExtra) {
+                        senderRawText += `\n\nAdditional profile notes:\n${senderExtra}`;
+                    }
+
+                    let receiverRawText = receiverProfile.raw_text || '';
+                    const targetLink = (state.targetProfileLink || '').trim();
+                    const targetExtra = (state.targetProfileExtra || '').trim();
+                    if (targetLink) {
+                        receiverRawText += `\n\nProfile link: ${targetLink}`;
+                    }
+                    if (targetExtra) {
+                        receiverRawText += `\n\nAdditional profile notes:\n${targetExtra}`;
+                    }
+                    receiverProfile.raw_text = receiverRawText;
+
                     // Generate email
                     const bodyPayload = {
                         sender: {
                             ...state.senderProfile,
+                            raw_text: senderRawText,
                             motivation: getPurposeText(),
                             ask: `I am looking to ${getPurposeText().toLowerCase()} in ${getFieldText()}`
                         },
@@ -2130,6 +2182,35 @@ I&apos;m {{sender_name}}, currently ...
             });
 
             document.getElementById('btn-regenerate').addEventListener('click', regenerateEmail);
+        }
+
+        // Track optional sender/target profile links and extra text
+        function setupProfileLinkInputs() {
+            const senderLinkInput = document.getElementById('sender-profile-link');
+            const senderExtraInput = document.getElementById('sender-profile-extra');
+            const targetLinkInput = document.getElementById('target-profile-link');
+            const targetExtraInput = document.getElementById('target-profile-extra');
+
+            if (senderLinkInput) {
+                senderLinkInput.addEventListener('input', function() {
+                    state.senderProfileLink = this.value;
+                });
+            }
+            if (senderExtraInput) {
+                senderExtraInput.addEventListener('input', function() {
+                    state.senderProfileExtra = this.value;
+                });
+            }
+            if (targetLinkInput) {
+                targetLinkInput.addEventListener('input', function() {
+                    state.targetProfileLink = this.value;
+                });
+            }
+            if (targetExtraInput) {
+                targetExtraInput.addEventListener('input', function() {
+                    state.targetProfileExtra = this.value;
+                });
+            }
         }
 
         // Setup generation mode (smart vs template)
