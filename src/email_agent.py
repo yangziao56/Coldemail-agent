@@ -363,7 +363,8 @@ def build_prompt(
     # Base system instruction
     system_content = (
         "You craft sincere, concise first-contact cold emails that help two people build a genuine connection. "
-        "Use the provided sender and receiver details to highlight authentic overlaps and mutual value. "
+        #"Use the provided sender and receiver details to highlight authentic overlaps and mutual value. "
+        "Use the sender and receiver details to explicitly surface genuine common ground and, above all, make clear what concrete value the sender can offer the receiver. "
         "Output a complete email with a Subject line and body that is ready to paste into an email client."
     )
 
