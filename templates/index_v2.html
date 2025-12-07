@@ -1275,7 +1275,7 @@ I&apos;m {{sender_name}}, currently ...
             },
             hasResume: null,
             senderProfile: null,
-            questionnaireAnswers: {},
+            questionnaireHistory: [], // [{ question, answer }]
             hasTarget: null,
             selectedTargets: [],  // Array of selected targets
             currentEmailIndex: 0,  // Current email being viewed
@@ -1645,13 +1645,14 @@ I&apos;m {{sender_name}}, currently ...
             try {
                 const purposeText = getPurposeText();
                 const fieldText = getFieldText();
-                
-                const response = await fetch('/api/generate-questionnaire', {
+                const response = await fetch('/api/next-question', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         purpose: purposeText,
-                        field: fieldText
+                        field: fieldText,
+                        history: state.questionnaireHistory,
+                        max_questions: 5
                     })
                 });
                 
@@ -1659,7 +1660,7 @@ I&apos;m {{sender_name}}, currently ...
                 
                 if (data.success) {
                     loading.classList.remove('visible');
-                    renderQuestions(data.questions);
+                    renderNextQuestion(data);
                 } else {
                     throw new Error(data.error || 'Failed to generate questions');
                 }
@@ -1669,57 +1670,83 @@ I&apos;m {{sender_name}}, currently ...
             }
         }
 
-        // Render questionnaire questions
-        function renderQuestions(questions) {
+        // Render a single questionnaire question interactively
+        function renderNextQuestion(result) {
             const container = document.getElementById('questions-container');
             container.innerHTML = '';
             
-            questions.forEach((q, index) => {
-                const card = document.createElement('div');
-                card.className = 'question-card';
-                card.innerHTML = `
-                    <h4>Q${index + 1}: ${q.question}</h4>
-                    <div class="question-options" data-question="${index}">
-                        ${q.options.map((opt, optIndex) => `
-                            <div class="question-option" data-value="${optIndex}">${opt}</div>
-                        `).join('')}
-                    </div>
-                    <div class="question-custom-input" id="q${index}-custom">
-                        <input type="text" placeholder="Your custom answer..." data-question="${index}">
-                    </div>
-                `;
-                container.appendChild(card);
-                
-                // Add click handlers
-                card.querySelectorAll('.question-option').forEach(opt => {
-                    opt.addEventListener('click', function() {
-                        const options = this.parentElement;
-                        options.querySelectorAll('.question-option').forEach(o => o.classList.remove('selected'));
-                        this.classList.add('selected');
-                        
-                        const qIndex = options.dataset.question;
-                        const customInput = document.getElementById(`q${qIndex}-custom`);
-                        
-                        // Show custom input for last option
-                        if (parseInt(this.dataset.value) === q.options.length - 1) {
-                            customInput.classList.add('visible');
-                            state.questionnaireAnswers[qIndex] = { type: 'custom', value: '' };
-                        } else {
-                            customInput.classList.remove('visible');
-                            state.questionnaireAnswers[qIndex] = { type: 'preset', value: this.textContent };
-                        }
-                        checkStep2Valid();
+            if (result.done) {
+                const info = document.createElement('div');
+                info.className = 'notice';
+                info.innerHTML = `<span class="icon">✅</span> We already have enough info from your answers. You can continue to the next step.`;
+                container.appendChild(info);
+                checkStep2Valid();
+                return;
+            }
+
+            const questionText = result.question || 'Tell us something about your background that is relevant for this outreach.';
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.innerHTML = `
+                <h4>Q${state.questionnaireHistory.length + 1}: ${questionText}</h4>
+                <div class="question-custom-input visible">
+                    <textarea id="question-answer-input" rows="3" placeholder="Type your answer here..."></textarea>
+                </div>
+                <div class="btn-group" style="margin-top: 10px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" id="btn-skip-question">Skip</button>
+                    <button class="btn btn-primary" id="btn-next-question" disabled>Next Question</button>
+                </div>
+            `;
+            container.appendChild(card);
+
+            const answerInput = document.getElementById('question-answer-input');
+            const nextBtn = document.getElementById('btn-next-question');
+            const skipBtn = document.getElementById('btn-skip-question');
+
+            answerInput.addEventListener('input', function() {
+                nextBtn.disabled = !this.value.trim();
+            });
+
+            async function submitAnswerAndLoadNext(answer) {
+                state.questionnaireHistory.push({
+                    question: questionText,
+                    answer: answer || ''
+                });
+                checkStep2Valid();
+                const loading = document.getElementById('questionnaire-loading');
+                loading.classList.add('visible');
+                try {
+                    const response = await fetch('/api/next-question', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            purpose: getPurposeText(),
+                            field: getFieldText(),
+                            history: state.questionnaireHistory,
+                            max_questions: 5
+                        })
                     });
-                });
-                
-                // Custom input handler
-                card.querySelector('input').addEventListener('input', function() {
-                    const qIndex = this.dataset.question;
-                    if (state.questionnaireAnswers[qIndex]?.type === 'custom') {
-                        state.questionnaireAnswers[qIndex].value = this.value;
+                    const data = await response.json();
+                    loading.classList.remove('visible');
+                    if (data.success) {
+                        renderNextQuestion(data);
+                    } else {
+                        throw new Error(data.error || 'Failed to load next question');
                     }
-                    checkStep2Valid();
-                });
+                } catch (error) {
+                    loading.classList.remove('visible');
+                    alert('Error loading next question: ' + error.message);
+                }
+            }
+
+            nextBtn.addEventListener('click', function() {
+                const answer = answerInput.value.trim();
+                if (!answer) return;
+                submitAnswerAndLoadNext(answer);
+            });
+
+            skipBtn.addEventListener('click', function() {
+                submitAnswerAndLoadNext('');
             });
         }
 
@@ -1896,7 +1923,7 @@ I&apos;m {{sender_name}}, currently ...
 
             // Step 2 -> Step 3
             document.getElementById('btn-step2-next').addEventListener('click', async function() {
-                if (!state.hasResume && Object.keys(state.questionnaireAnswers).length > 0) {
+                if (!state.hasResume && state.questionnaireHistory.length > 0) {
                     // Build profile from questionnaire
                     await buildProfileFromQuestionnaire();
                 }
@@ -2002,9 +2029,9 @@ I&apos;m {{sender_name}}, currently ...
         // Build profile from questionnaire answers
         async function buildProfileFromQuestionnaire() {
             try {
-                const answers = Object.entries(state.questionnaireAnswers).map(([q, a]) => 
-                    a.type === 'custom' ? a.value : a.value
-                );
+                const answers = state.questionnaireHistory
+                    .map(qa => qa.answer)
+                    .filter(a => a && a.trim());
                 
                 const response = await fetch('/api/profile-from-questionnaire', {
                     method: 'POST',
@@ -2396,18 +2423,8 @@ I&apos;m {{sender_name}}, currently ...
             if (state.hasResume && state.senderProfile) {
                 valid = true;
             } else if (!state.hasResume) {
-                // Check if all questions are answered
-                const totalQuestions = document.querySelectorAll('.question-card').length;
-                const answeredQuestions = Object.keys(state.questionnaireAnswers).length;
-                valid = totalQuestions > 0 && answeredQuestions >= totalQuestions;
-                
-                // Also check if custom answers have values
-                for (const [key, answer] of Object.entries(state.questionnaireAnswers)) {
-                    if (answer.type === 'custom' && !answer.value.trim()) {
-                        valid = false;
-                        break;
-                    }
-                }
+                // For interactive questionnaire: at least one answer
+                valid = state.questionnaireHistory.length > 0;
             }
             document.getElementById('btn-step2-next').disabled = !valid;
         }

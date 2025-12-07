@@ -525,6 +525,101 @@ Return JSON only, no other text."""
         ]
 
 
+def generate_next_question(
+    purpose: str,
+    field: str,
+    history: list[dict[str, str]],
+    *,
+    max_questions: int = 5,
+    model: str = DEFAULT_MODEL,
+) -> dict:
+    """
+    Generate the next questionnaire question interactively based on previous Q&A.
+    
+    Args:
+        purpose: The user's purpose
+        field: The user's field of interest
+        history: List of {"question": str, "answer": str} for previous turns
+        max_questions: Soft cap on total questions before suggesting to stop
+        model: Gemini model to use
+        
+    Returns:
+        Dict with either:
+          {"done": True, "reason": "..."} or
+          {"done": False, "question": "...", "meta": {"reason": "..." }}
+    """
+    # Build history text
+    history_lines: list[str] = []
+    for idx, qa in enumerate(history, start=1):
+        q = str(qa.get("question", "") or "").strip()
+        a = str(qa.get("answer", "") or "").strip()
+        if not q:
+            continue
+        history_lines.append(f"Q{idx}: {q}\nA{idx}: {a or '(no answer)'}")
+    history_text = "\n\n".join(history_lines) if history_lines else "None yet."
+
+    prompt = f"""You are designing an interactive questionnaire to quickly understand a person who wants to send cold emails.
+
+Their outreach purpose: {purpose or 'Not specified'}
+Their field of interest: {field or 'Not specified'}
+
+You ask ONE question at a time.
+You can see the history of questions already asked and the user's answers:
+
+{history_text}
+
+Goal of the questionnaire:
+- In at most {max_questions} questions total, collect enough information to build a basic professional profile for writing a personalized cold email.
+- The profile should cover: education, experience level, key skills, notable projects/achievements, and what they are looking for (goals).
+- Each new question should try to fill in missing or weakly covered areas based on the history.
+
+INSTRUCTIONS:
+1. First decide if you need to ask another question.
+   - If you already have enough information for a basic profile OR
+     you have already asked {max_questions} questions, you should stop.
+2. If you need another question:
+   - Ask exactly ONE clear question.
+   - Prefer open or semi-open questions that encourage short but informative answers.
+   - Do NOT repeat previous questions.
+   - Tailor the question to the given purpose and field and the previous answers.
+
+Return STRICT JSON with this schema:
+
+If you want to stop asking:
+{{
+  "done": true,
+  "reason": "short explanation of why no more questions are needed"
+}}
+
+If you want to ask another question:
+{{
+  "done": false,
+  "question": "Your next question here",
+  "meta": {{
+    "reason": "short explanation of what this question is trying to capture (e.g., skills, projects, goals)"
+  }}
+}}
+
+Return JSON only, with no additional text."""
+
+    content = _call_gemini(prompt, model=model, json_mode=True)
+    try:
+        data = json.loads(content)
+        if not isinstance(data, dict):
+            raise ValueError("Expected a JSON object for next question")
+        # Minimal normalization
+        if "done" not in data:
+            data["done"] = False
+        return data
+    except (json.JSONDecodeError, ValueError):
+        # Fallback: ask a generic open question
+        return {
+            "done": False,
+            "question": "Is there anything about your background, skills, or achievements that you think is most relevant for this outreach?",
+            "meta": {"reason": "generic fallback question"},
+        }
+
+
 def build_profile_from_answers(
     purpose: str,
     field: str,

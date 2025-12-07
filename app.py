@@ -13,6 +13,7 @@ from src.email_agent import (
     generate_email,
     extract_profile_from_pdf,
     generate_questionnaire,
+    generate_next_question,
     build_profile_from_answers,
     find_target_recommendations,
     regenerate_email_with_style,
@@ -237,6 +238,32 @@ def api_generate_questionnaire():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/next-question', methods=['POST'])
+@login_required
+def api_next_question():
+    """Generate the next questionnaire question based on history."""
+    data = request.get_json()
+    
+    purpose = (data.get('purpose') or '').strip()
+    field = (data.get('field') or '').strip()
+    history = data.get('history') or []
+    max_questions = data.get('max_questions') or 5
+    
+    try:
+        result = generate_next_question(
+            purpose,
+            field,
+            history,
+            max_questions=int(max_questions) if isinstance(max_questions, (int, str)) else 5,
+        )
+        return jsonify({
+            'success': True,
+            **result,
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/profile-from-questionnaire', methods=['POST'])
