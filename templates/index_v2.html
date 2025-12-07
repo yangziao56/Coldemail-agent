@@ -968,6 +968,19 @@
                 <div class="notice" style="margin-bottom: 12px;">
                     <span class="icon">💡</span> Tell us what to look for and we'll propose great targets.
                 </div>
+                <!-- Interactive target preference questionnaire -->
+                <div class="questionnaire" id="target-questionnaire">
+                    <h3 style="margin-bottom: 12px; color: #333;">Refine your ideal targets</h3>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+                        Answer a few quick questions about the kind of people you want to reach. You can skip questions or stop at any time.
+                    </p>
+                    <div id="target-questions-container"></div>
+                    <div class="loading" id="target-questionnaire-loading">
+                        <div class="spinner"></div>
+                        <div class="loading-text">Thinking about the best questions...</div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>What field or specialization should we target? <span style="color:#d9534f;">*</span></label>
                     <div class="choice-buttons" id="pref-field-options">
@@ -1285,6 +1298,7 @@ I&apos;m {{sender_name}}, currently ...
             senderProfileExtra: '',
             targetProfileLink: '',
             targetProfileExtra: '',
+            targetPreferenceHistory: [],
             generationMode: null,  // 'smart' or 'template'
             regenerateStyle: null,
             manualTargetProfile: null,  // Profile from uploaded document
@@ -1398,15 +1412,19 @@ I&apos;m {{sender_name}}, currently ...
                     if (state.hasTarget) {
                         document.getElementById('manual-target-section').classList.remove('hidden');
                         document.getElementById('target-preferences').classList.add('hidden');
+                        document.getElementById('target-questionnaire').classList.remove('visible');
                         document.getElementById('recommendation-section').classList.add('hidden');
                         document.getElementById('match-details').classList.remove('visible');
                         resetRecommendationState();
                     } else {
                         document.getElementById('manual-target-section').classList.add('hidden');
                         document.getElementById('target-preferences').classList.remove('hidden');
+                        document.getElementById('target-questionnaire').classList.add('visible');
                         document.getElementById('recommendation-section').classList.add('hidden');
                         document.getElementById('match-details').classList.remove('visible');
                         resetRecommendationState();
+                        state.targetPreferenceHistory = [];
+                        loadTargetQuestionnaire();
                         updateFindMatchesEnabled();
                     }
                     checkStep3Valid();
@@ -1826,6 +1844,195 @@ I&apos;m {{sender_name}}, currently ...
             });
         }
 
+        // Load next target preference question
+        async function loadTargetQuestionnaire() {
+            const container = document.getElementById('target-questions-container');
+            const loading = document.getElementById('target-questionnaire-loading');
+            if (!container || !loading) return;
+            
+            container.innerHTML = '';
+            loading.classList.add('visible');
+            
+            try {
+                const response = await fetch('/api/next-target-question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        purpose: getPurposeText(),
+                        field: getTargetFieldFromPreferences() || getFieldText(),
+                        sender_profile: state.senderProfile,
+                        history: state.targetPreferenceHistory,
+                        max_questions: 5
+                    })
+                });
+                const data = await response.json();
+                loading.classList.remove('visible');
+                if (data.success) {
+                    renderNextTargetQuestion(data);
+                } else {
+                    throw new Error(data.error || 'Failed to load target preference question');
+                }
+            } catch (error) {
+                loading.classList.remove('visible');
+                console.error('Error loading target questionnaire:', error);
+            }
+        }
+
+        // Render a single target preference question
+        function renderNextTargetQuestion(result) {
+            const container = document.getElementById('target-questions-container');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (result.done) {
+                const info = document.createElement('div');
+                info.className = 'notice';
+                info.innerHTML = `<span class="icon">✅</span> We have enough preference info. You can now find matches.`;
+                container.appendChild(info);
+                return;
+            }
+
+            const questionText = result.question || 'What kind of people would you most like to reach?';
+            const options = Array.isArray(result.options) ? result.options : null;
+            const card = document.createElement('div');
+            card.className = 'question-card';
+
+            let innerHtml = `<h4>Preference Q${state.targetPreferenceHistory.length + 1}: ${questionText}</h4>`;
+
+            if (options && options.length > 0) {
+                innerHtml += `
+                    <div class="question-options" id="target-question-options">
+                        ${options.map((opt, idx) => `
+                            <div class="question-option" data-index="${idx}">${opt}</div>
+                        `).join('')}
+                    </div>
+                    <div class="question-custom-input" id="target-question-custom-wrapper">
+                        <textarea id="target-question-custom-input" rows="2" placeholder="Your custom answer..."></textarea>
+                    </div>
+                `;
+            } else {
+                innerHtml += `
+                    <div class="question-custom-input visible">
+                        <textarea id="target-question-answer-input" rows="3" placeholder="Type your answer here..."></textarea>
+                    </div>
+                `;
+            }
+
+            innerHtml += `
+                <div class="btn-group" style="margin-top: 10px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" id="btn-target-skip-question">Skip</button>
+                    <button class="btn btn-primary" id="btn-target-next-question" disabled>Next Preference</button>
+                </div>
+            `;
+
+            card.innerHTML = innerHtml;
+            container.appendChild(card);
+
+            const nextBtn = document.getElementById('btn-target-next-question');
+            const skipBtn = document.getElementById('btn-target-skip-question');
+            let selectedIndex = null;
+
+            if (options && options.length > 0) {
+                const optionEls = Array.from(document.querySelectorAll('#target-question-options .question-option'));
+                const customWrapper = document.getElementById('target-question-custom-wrapper');
+                const customInput = document.getElementById('target-question-custom-input');
+
+                function updateNextEnabled() {
+                    if (selectedIndex === null) {
+                        nextBtn.disabled = true;
+                        return;
+                    }
+                    const isLast = selectedIndex === options.length - 1;
+                    if (isLast) {
+                        nextBtn.disabled = !customInput.value.trim();
+                    } else {
+                        nextBtn.disabled = false;
+                    }
+                }
+
+                optionEls.forEach(el => {
+                    el.addEventListener('click', function() {
+                        optionEls.forEach(o => o.classList.remove('selected'));
+                        this.classList.add('selected');
+                        selectedIndex = parseInt(this.dataset.index, 10);
+                        const isLast = selectedIndex === options.length - 1;
+                        if (isLast) {
+                            customWrapper.classList.add('visible');
+                        } else {
+                            customWrapper.classList.remove('visible');
+                        }
+                        updateNextEnabled();
+                    });
+                });
+
+                if (customInput) {
+                    customInput.addEventListener('input', updateNextEnabled);
+                }
+            } else {
+                const answerInput = document.getElementById('target-question-answer-input');
+                answerInput.addEventListener('input', function() {
+                    nextBtn.disabled = !this.value.trim();
+                });
+            }
+
+            async function submitTargetAnswerAndLoadNext(answer) {
+                state.targetPreferenceHistory.push({
+                    question: questionText,
+                    answer: answer || ''
+                });
+                try {
+                    const loading = document.getElementById('target-questionnaire-loading');
+                    loading.classList.add('visible');
+                    const response = await fetch('/api/next-target-question', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            purpose: getPurposeText(),
+                            field: getTargetFieldFromPreferences() || getFieldText(),
+                            sender_profile: state.senderProfile,
+                            history: state.targetPreferenceHistory,
+                            max_questions: 5
+                        })
+                    });
+                    const data = await response.json();
+                    loading.classList.remove('visible');
+                    if (data.success) {
+                        renderNextTargetQuestion(data);
+                    } else {
+                        throw new Error(data.error || 'Failed to load next preference question');
+                    }
+                } catch (error) {
+                    const loading = document.getElementById('target-questionnaire-loading');
+                    loading.classList.remove('visible');
+                    console.error('Error loading next preference question:', error);
+                }
+            }
+
+            nextBtn.addEventListener('click', function() {
+                let answer = '';
+                if (options && options.length > 0) {
+                    if (selectedIndex === null) return;
+                    const isLast = selectedIndex === options.length - 1;
+                    if (isLast) {
+                        const customInput = document.getElementById('target-question-custom-input');
+                        if (!customInput.value.trim()) return;
+                        answer = customInput.value.trim();
+                    } else {
+                        answer = options[selectedIndex];
+                    }
+                } else {
+                    const answerInput = document.getElementById('target-question-answer-input');
+                    answer = (answerInput.value || '').trim();
+                    if (!answer) return;
+                }
+                submitTargetAnswerAndLoadNext(answer);
+            });
+
+            skipBtn.addEventListener('click', function() {
+                submitTargetAnswerAndLoadNext('');
+            });
+        }
+
         // Load recommendations
         async function loadRecommendations() {
             const list = document.getElementById('recommendation-list');
@@ -1840,6 +2047,10 @@ I&apos;m {{sender_name}}, currently ...
             try {
                 const purposeText = getPurposeText();
                 const fieldText = getTargetFieldFromPreferences();
+                const prefHistory = state.targetPreferenceHistory || [];
+                const prefExtra = prefHistory.length > 0
+                    ? prefHistory.map((qa, idx) => `Q${idx + 1}: ${qa.question}\nA${idx + 1}: ${qa.answer}`).join('\n\n')
+                    : '';
                 
                 if (!fieldText) {
                     loading.classList.remove('visible');
@@ -1858,7 +2069,8 @@ I&apos;m {{sender_name}}, currently ...
                             seniority: state.targetPrefs.seniority,
                             org_type: state.targetPrefs.orgType,
                             outreach_goal: state.targetPrefs.outreachGoal,
-                            prominence: state.targetPrefs.prominence
+                            prominence: state.targetPrefs.prominence,
+                            extra: prefExtra
                         }
                     })
                 });

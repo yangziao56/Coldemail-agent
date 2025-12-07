@@ -14,6 +14,7 @@ from src.email_agent import (
     extract_profile_from_pdf,
     generate_questionnaire,
     generate_next_question,
+    generate_next_target_question,
     build_profile_from_answers,
     find_target_recommendations,
     regenerate_email_with_style,
@@ -255,6 +256,34 @@ def api_next_question():
         result = generate_next_question(
             purpose,
             field,
+            history,
+            max_questions=int(max_questions) if isinstance(max_questions, (int, str)) else 5,
+        )
+        return jsonify({
+            'success': True,
+            **result,
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/next-target-question', methods=['POST'])
+@login_required
+def api_next_target_question():
+    """Generate the next preference question for target recommendations."""
+    data = request.get_json()
+    
+    purpose = (data.get('purpose') or '').strip()
+    field = (data.get('field') or '').strip()
+    sender_profile = data.get('sender_profile') or None
+    history = data.get('history') or []
+    max_questions = data.get('max_questions') or 5
+    
+    try:
+        result = generate_next_target_question(
+            purpose,
+            field,
+            sender_profile,
             history,
             max_questions=int(max_questions) if isinstance(max_questions, (int, str)) else 5,
         )

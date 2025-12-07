@@ -628,6 +628,113 @@ Return JSON only, with no additional text."""
         }
 
 
+def generate_next_target_question(
+    purpose: str,
+    field: str,
+    sender_profile: dict | None,
+    history: list[dict[str, str]],
+    *,
+    max_questions: int = 5,
+    model: str = DEFAULT_MODEL,
+) -> dict:
+    """
+    Generate the next interactive preference question for finding target contacts.
+    
+    Args:
+        purpose: User's outreach purpose
+        field: Target field/specialization
+        sender_profile: Optional sender profile dict for context
+        history: List of {"question": str, "answer": str} for previous preference questions
+        max_questions: Soft cap on total preference questions
+        model: Gemini model to use
+    """
+    history_lines: list[str] = []
+    for idx, qa in enumerate(history, start=1):
+        q = str(qa.get("question", "") or "").strip()
+        a = str(qa.get("answer", "") or "").strip()
+        if not q:
+            continue
+        history_lines.append(f"Q{idx}: {q}\nA{idx}: {a or '(no answer)'}")
+    history_text = "\n\n".join(history_lines) if history_lines else "None yet."
+
+    sender_summary = ""
+    if sender_profile:
+        sender_summary = _build_sender_context(sender_profile)
+
+    prompt = f"""You are designing an interactive preference questionnaire to help select ideal targets for cold outreach.
+
+User's outreach purpose: {purpose or 'Not specified'}
+User's primary field/interest: {field or 'Not specified'}
+
+Here is a brief summary of the sender's background (may be empty):
+{sender_summary or 'Not available.'}
+
+You ask ONE preference question at a time to clarify what kind of people we should recommend (targets).
+You can see the history of preference questions already asked and the user's answers:
+
+{history_text}
+
+Goal of this preference questionnaire:
+- In at most {max_questions} questions total, collect enough information about the user's targeting preferences.
+- Preferences may include: desired seniority, organization type, specific subfields, type of opportunity (mentorship, job, collaboration, etc.), desired prominence (global leader vs. more accessible), geography, or other relevant filters.
+- Each new question should focus on ONE dimension and avoid repeating covered dimensions unless genuinely needed.
+
+INSTRUCTIONS:
+1. First decide if you need to ask another preference question.
+   - If you already have enough information for reasonable targeting OR
+     you have already asked {max_questions} questions, you should stop.
+2. If you need another question:
+   - Ask exactly ONE clear preference question.
+   - Provide 3-5 answer options as short phrases.
+   - The LAST option must always be "Other (please specify)" to allow a custom answer.
+   - Do NOT repeat previous questions.
+   - Tailor the question to the user's purpose, field, sender background (if available), and previous answers.
+
+Return STRICT JSON with this schema:
+
+If you want to stop asking:
+{{
+  "done": true,
+  "reason": "short explanation of why no more preference questions are needed"
+}}
+
+If you want to ask another question:
+{{
+  "done": false,
+  "question": "Your next preference question here",
+  "options": ["option 1", "option 2", "option 3", "Other (please specify)"],
+  "meta": {{
+    "dimension": "short label for what this question is about (e.g., seniority, org_type, prominence, outreach_goal, geography, subfield, other)",
+    "reason": "short explanation of why this preference matters"
+  }}
+}}
+
+Return JSON only, with no additional text."""
+
+    content = _call_gemini(prompt, model=model, json_mode=True)
+    try:
+        data = json.loads(content)
+        if not isinstance(data, dict):
+            raise ValueError("Expected a JSON object for next target preference question")
+        if "done" not in data:
+            data["done"] = False
+        return data
+    except (json.JSONDecodeError, ValueError):
+        return {
+            "done": False,
+            "question": "What type of target would you most like to reach (for example, seniority or role)?",
+            "options": [
+                "Senior IC (Staff/Principal level)",
+                "Leadership (Director/VP/C-level)",
+                "Peers at a similar level to me",
+                "Other (please specify)",
+            ],
+            "meta": {
+                "dimension": "seniority",
+                "reason": "fallback question about target seniority",
+            },
+        }
+
 def build_profile_from_answers(
     purpose: str,
     field: str,
@@ -705,6 +812,7 @@ def _build_preference_context(preferences: dict | None) -> str:
         "org_type": "Organization type",
         "outreach_goal": "Outreach goal",
         "prominence": "Desired prominence",
+        "extra": "Additional targeting notes",
     }
     for key, label in pref_map.items():
         value = preferences.get(key)
