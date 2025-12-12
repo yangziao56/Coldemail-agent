@@ -1,5 +1,98 @@
 # Development Log
 
+## 2025-12-12: v3.0 - Mode Selection (Quick Start & Professional) 🚀
+
+### New Features
+
+- **Mode Selection Screen**
+  - Added beautiful mode selection interface after login
+  - Two modes: "Quick Start" and "Professional"
+  - Card-based UI with icons, descriptions, and feature lists
+
+- **Privacy Notice** 🔒 (NEW!)
+  - Displayed after mode selection, before proceeding
+  - Informs users that:
+    - Personal info and answers are only used for target matching and email generation
+    - Data is not shared with third parties
+    - Uploaded resumes are processed securely, not stored permanently
+    - Session data is cleared when app is closed
+  - User must acknowledge to continue
+
+- **Quick Start Mode** ⚡
+  - Designed for users without a resume
+  - No document upload required
+  - Uses interactive questionnaire to build user profile
+  - Smart target matching with recommendations
+  - Streamlined 5-step workflow:
+    1. Purpose & Field selection
+    2. Quick Profile Builder (questionnaire)
+    3. Find Targets (manual or AI-recommended)
+    4. Email Template selection
+    5. Generate personalized emails
+
+- **Professional Mode** 💼 (NEW!)
+  - **Track Selection**: Choose between Finance or Academic
+  - **Resume Upload**: Required for profile analysis
+    - Drag & drop or click to upload
+    - AI-powered resume parsing
+    - Shows extracted profile summary
+  - **Target Choice**: 
+    - "Yes, I Have Targets" → Direct to manual input
+    - "Find Targets for Me" → AI recommendations
+  - **Professional Preference Questions**:
+    - Track-specific questions
+    - Based on resume analysis
+    - Generates highly relevant recommendations
+  - **Finance Track Features**:
+    - Investment banking connections
+    - Hedge fund & asset management
+    - Fintech startups & VCs
+    - Quantitative research roles
+  - **Academic Track Features**:
+    - Professor & researcher connections
+    - PhD & postdoc applications
+    - Research collaborations
+    - Academic conference networking
+
+### Professional Mode Flow
+
+```
+Mode Selection → Track (Finance/Academic) → Resume Upload → Target Choice
+    ↓ (Have targets)                    ↓ (Need recommendations)
+    Manual Input                        Preference Questions → AI Find Targets
+    ↓                                   ↓
+    Step 3 (Find Targets) → Step 4 (Template) → Step 5 (Generate)
+```
+
+### Modified Files
+
+- `templates/index_v2.html`:
+  - Added Professional mode panels:
+    - `pro-track-selection`: Finance/Academic choice
+    - `pro-resume-upload`: Resume upload with drag & drop
+    - `pro-target-choice`: Have targets vs need recommendations
+    - `pro-preferences`: Professional preference questions
+  - Added new state variables:
+    - `proTrack`: 'finance' or 'academic'
+    - `proTargetChoice`: 'have' or 'need'
+    - `proPreferenceHistory`: Preference Q&A history
+  - Added new functions:
+    - `setupProfessionalMode()`: All professional flow logic
+    - `uploadProResume()`: Handle resume upload
+    - `loadProPreferenceQuestions()`: Load track-specific questions
+    - `renderProPreferenceQuestion()`: Render interactive questions
+    - `findProTargets()`: Find recommendations based on profile
+
+### UI/UX Improvements
+
+- Professional mode cards with track-specific styling
+- Drag & drop resume upload area
+- Resume summary display after upload
+- Track-aware preference questions
+- Seamless transition from professional flow to main email generation
+
+---
+
 ## 2025-12-05: v2.2 - Gemini Google Search Integration 🔍
 
 ### Bug Fixes

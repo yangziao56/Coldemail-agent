@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cold Email Generator v2</title>
+    <title>Cold Email Generator v3</title>
     <style>
         * {
             margin: 0;
@@ -768,6 +768,140 @@
             background: rgba(102, 126, 234, 0.1);
         }
 
+        /* Mode Selection Styles */
+        .mode-selection-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .mode-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            width: 340px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.25);
+        }
+
+        .mode-card:hover::before {
+            opacity: 1;
+        }
+
+        .mode-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea08 0%, #764ba208 100%);
+        }
+
+        .mode-card.selected::before {
+            opacity: 1;
+        }
+
+        .mode-card .mode-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .mode-card .mode-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .mode-card .mode-subtitle {
+            font-size: 0.95em;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .mode-card .mode-features {
+            text-align: left;
+            margin: 20px 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .mode-card .mode-features li {
+            padding: 8px 0;
+            font-size: 14px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mode-card .mode-features li::before {
+            content: '✓';
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .mode-card .mode-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .mode-card.quick .mode-badge {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .mode-card.pro .mode-badge {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .mode-card.pro .mode-coming-soon {
+            position: absolute;
+            top: 15px;
+            right: -30px;
+            background: #ff9800;
+            color: white;
+            padding: 5px 40px;
+            font-size: 11px;
+            font-weight: 600;
+            transform: rotate(45deg);
+        }
+
+        .mode-card.pro.disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .mode-card.pro.disabled:hover {
+            transform: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .option-cards {
@@ -790,6 +924,16 @@
             .step span:not(.step-number) {
                 display: none;
             }
+            
+            .mode-selection-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mode-card {
+                width: 100%;
+                max-width: 340px;
+            }
         }
     </style>
 </head>
@@ -797,12 +941,12 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>📧 Cold Email Generator <span class="version-badge">v2.2</span></h1>
+            <h1>📧 Cold Email Generator <span class="version-badge">v3.0</span></h1>
             <a href="/logout" class="btn-logout">Logout</a>
         </div>
 
-        <!-- Progress Steps -->
-        <div class="progress-container">
+        <!-- Progress Steps (hidden until mode selected) -->
+        <div class="progress-container hidden" id="progress-container">
             <div class="progress-steps">
                 <div class="step active" id="step-indicator-1">
                     <span class="step-number">1</span>
@@ -831,8 +975,191 @@
             </div>
         </div>
 
+        <!-- Mode Selection (shown first) -->
+        <div class="panel" id="mode-selection">
+            <h2><span class="icon">🚀</span> Choose Your Mode</h2>
+            <p class="panel-description">Select how you'd like to create your cold emails. You can always switch modes later.</p>
+            
+            <div class="mode-selection-container">
+                <!-- Quick Start Mode -->
+                <div class="mode-card quick" id="mode-quick" data-mode="quick">
+                    <div class="mode-icon">⚡</div>
+                    <div class="mode-title">Quick Start</div>
+                    <div class="mode-subtitle">Perfect for getting started fast without uploading documents</div>
+                    <ul class="mode-features">
+                        <li>No resume upload required</li>
+                        <li>Answer a few quick questions</li>
+                        <li>AI builds your profile from answers</li>
+                        <li>Smart target matching</li>
+                        <li>Generate personalized emails</li>
+                    </ul>
+                    <div class="mode-badge">🎯 Best for beginners</div>
+                </div>
+                
+                <!-- Professional Mode -->
+                <div class="mode-card pro" id="mode-pro" data-mode="professional">
+                    <div class="mode-icon">💼</div>
+                    <div class="mode-title">Professional</div>
+                    <div class="mode-subtitle">Advanced features for finance and academic professionals</div>
+                    <ul class="mode-features">
+                        <li>Upload your resume/CV</li>
+                        <li>Choose Finance or Academic track</li>
+                        <li>Advanced target recommendations</li>
+                        <li>Industry-specific email templates</li>
+                        <li>Detailed profile analysis</li>
+                    </ul>
+                    <div class="mode-badge">⭐ Premium features</div>
+                </div>
+            </div>
+            
+            <div class="btn-group" style="justify-content: center; margin-top: 30px;">
+                <button class="btn btn-primary" id="btn-mode-next" disabled>Continue with Selected Mode →</button>
+            </div>
+        </div>
+
+        <!-- Professional Mode: Track Selection -->
+        <div class="panel hidden" id="pro-track-selection">
+            <h2><span class="icon">🎯</span> Choose Your Track</h2>
+            <p class="panel-description">Select your professional focus area for tailored recommendations.</p>
+            
+            <div class="mode-selection-container">
+                <!-- Finance Track -->
+                <div class="mode-card" id="track-finance" data-track="finance">
+                    <div class="mode-icon">📈</div>
+                    <div class="mode-title">Finance</div>
+                    <div class="mode-subtitle">Investment banking, asset management, fintech, quantitative finance</div>
+                    <ul class="mode-features">
+                        <li>Connect with finance professionals</li>
+                        <li>Investment banks & hedge funds</li>
+                        <li>Fintech startups & VCs</li>
+                        <li>Quantitative research roles</li>
+                    </ul>
+                </div>
+                
+                <!-- Academic Track -->
+                <div class="mode-card" id="track-academic" data-track="academic">
+                    <div class="mode-icon">🎓</div>
+                    <div class="mode-title">Academic</div>
+                    <div class="mode-subtitle">Research positions, PhD programs, postdoc opportunities</div>
+                    <ul class="mode-features">
+                        <li>Connect with professors & researchers</li>
+                        <li>PhD & postdoc applications</li>
+                        <li>Research collaborations</li>
+                        <li>Academic conference networking</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="btn-group" style="justify-content: center; margin-top: 30px;">
+                <button class="btn btn-secondary" id="btn-track-back">← Back to Mode Selection</button>
+                <button class="btn btn-primary" id="btn-track-next" disabled>Continue →</button>
+            </div>
+        </div>
+
+        <!-- Professional Mode: Resume Upload -->
+        <div class="panel hidden" id="pro-resume-upload">
+            <h2><span class="icon">📄</span> Upload Your Resume</h2>
+            <p class="panel-description">Upload your resume or CV so we can analyze your background and find the best matches.</p>
+            
+            <div class="notice" style="background: #e3f2fd; border-color: #2196f3; color: #1565c0;">
+                <span class="icon">💼</span>
+                <strong>Professional Mode:</strong> Your resume helps us find highly targeted recommendations in the <span id="selected-track-display">your field</span> sector.
+            </div>
+            
+            <div class="form-group">
+                <label>Upload your resume (PDF)</label>
+                <div style="border: 2px dashed #667eea; border-radius: 12px; padding: 40px; text-align: center; background: #f8f9ff; cursor: pointer;" id="pro-resume-dropzone">
+                    <div style="font-size: 3em; margin-bottom: 15px;">📎</div>
+                    <div style="font-size: 16px; color: #333; margin-bottom: 10px;">Drag & drop your resume here</div>
+                    <div style="font-size: 14px; color: #666;">or click to browse (PDF only)</div>
+                    <input type="file" id="pro-resume-file" accept=".pdf" style="display: none;">
+                </div>
+            </div>
+            
+            <div class="loading hidden" id="pro-upload-loading">
+                <div class="spinner"></div>
+                <div class="loading-text">Analyzing your resume with AI...</div>
+            </div>
+            
+            <div class="hidden" id="pro-resume-success">
+                <div class="notice" style="background: #d4edda; border-color: #28a745; color: #155724;">
+                    <span class="icon">✅</span> Resume analyzed successfully! We found key information about your background.
+                </div>
+                <div id="pro-resume-summary" style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-top: 15px;">
+                    <!-- Resume summary will be shown here -->
+                </div>
+            </div>
+            
+            <div class="btn-group" style="justify-content: center; margin-top: 30px;">
+                <button class="btn btn-secondary" id="btn-resume-back">← Back to Track Selection</button>
+                <button class="btn btn-primary" id="btn-resume-next" disabled>Continue →</button>
+            </div>
+        </div>
+
+        <!-- Professional Mode: Target Selection -->
+        <div class="panel hidden" id="pro-target-choice">
+            <h2><span class="icon">🎯</span> Do You Have Specific Targets?</h2>
+            <p class="panel-description">Tell us if you already know who you want to contact, or if you need our AI to find the best matches.</p>
+            
+            <div class="mode-selection-container">
+                <!-- I Have Targets -->
+                <div class="mode-card" id="target-have" data-target-choice="have">
+                    <div class="mode-icon">✅</div>
+                    <div class="mode-title">Yes, I Have Targets</div>
+                    <div class="mode-subtitle">I know specific people I want to contact</div>
+                    <ul class="mode-features">
+                        <li>Enter target names directly</li>
+                        <li>AI fetches their profiles</li>
+                        <li>Generate tailored emails</li>
+                    </ul>
+                </div>
+                
+                <!-- Need Recommendations -->
+                <div class="mode-card" id="target-need" data-target-choice="need">
+                    <div class="mode-icon">🔍</div>
+                    <div class="mode-title">Find Targets for Me</div>
+                    <div class="mode-subtitle">Let AI recommend the best people based on your profile</div>
+                    <ul class="mode-features">
+                        <li>Answer a few preference questions</li>
+                        <li>AI analyzes your resume</li>
+                        <li>Get personalized recommendations</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="btn-group" style="justify-content: center; margin-top: 30px;">
+                <button class="btn btn-secondary" id="btn-target-choice-back">← Back</button>
+                <button class="btn btn-primary" id="btn-target-choice-next" disabled>Continue →</button>
+            </div>
+        </div>
+
+        <!-- Professional Mode: Preference Questions (when user needs recommendations) -->
+        <div class="panel hidden" id="pro-preferences">
+            <h2><span class="icon">🎯</span> Refine Your Target Preferences</h2>
+            <p class="panel-description">Answer a few questions to help us find the perfect contacts for you.</p>
+            
+            <div class="notice" style="background: #fff3e0; border-color: #ff9800; color: #e65100;">
+                <span class="icon">🤖</span>
+                <strong>AI-Powered:</strong> Based on your resume and these preferences, we'll find highly relevant targets in <span id="pref-track-display">your field</span>.
+            </div>
+            
+            <div id="pro-preference-questions">
+                <!-- Dynamic preference questions will be loaded here -->
+            </div>
+            
+            <div class="loading hidden" id="pro-pref-loading">
+                <div class="spinner"></div>
+                <div class="loading-text">Generating personalized questions...</div>
+            </div>
+            
+            <div class="btn-group" style="justify-content: center; margin-top: 30px;">
+                <button class="btn btn-secondary" id="btn-pref-back">← Back</button>
+                <button class="btn btn-primary" id="btn-find-pro-targets">🔍 Find My Targets</button>
+            </div>
+        </div>
+
         <!-- Step 1: Purpose -->
-        <div class="panel" id="step-1">
+        <div class="panel hidden" id="step-1">
             <h2><span class="icon">🎯</span> Step 1: What's Your Purpose?</h2>
             <p class="panel-description">Select the type of outreach you want to make and specify your field.</p>
             
@@ -904,17 +1231,26 @@
             <h2><span class="icon">👤</span> Step 2: Your Profile</h2>
             <p class="panel-description">Help us understand your background to generate personalized emails.</p>
 
-            <div class="notice">
-                <span class="icon">💡</span>
-                <strong>Tip:</strong> Uploading a resume is recommended for the best results!
+            <!-- Resume choice section (hidden in Quick Start mode) -->
+            <div id="resume-choice-section">
+                <div class="notice" id="resume-tip">
+                    <span class="icon">💡</span>
+                    <strong>Tip:</strong> Uploading a resume is recommended for the best results!
+                </div>
+
+                <div class="form-group">
+                    <label>Do you have a resume to upload?</label>
+                    <div class="choice-buttons" id="resume-choice">
+                        <button class="choice-btn" data-value="yes">✅ Yes, I have a resume</button>
+                        <button class="choice-btn" data-value="no">📝 No, I'll answer questions</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Do you have a resume to upload?</label>
-                <div class="choice-buttons" id="resume-choice">
-                    <button class="choice-btn" data-value="yes">✅ Yes, I have a resume</button>
-                    <button class="choice-btn" data-value="no">📝 No, I'll answer questions</button>
-                </div>
+            <!-- Quick Start Mode Notice -->
+            <div class="notice hidden" id="quick-start-notice" style="background: #e3f2fd; border-color: #2196f3; color: #1565c0;">
+                <span class="icon">⚡</span>
+                <strong>Quick Start Mode:</strong> Answer a few questions below and we'll build your profile automatically!
             </div>
 
             <!-- Resume Upload Section -->
@@ -1084,7 +1420,8 @@
                     </p>
                     <textarea id="target-profile-extra" rows="3" placeholder="Paste a short bio, key projects, or notes about this person..."></textarea>
                 </div>
-                <div class="form-group">
+                <!-- Document upload (hidden in Quick Start mode) -->
+                <div class="form-group" id="target-doc-upload-section">
                     <label>Upload Target's Document (Optional)</label>
                     <p style="font-size: 12px; color: #666; margin-bottom: 10px;">📎 Upload a PDF, TXT, or MD file with information about this person</p>
                     <input type="file" id="target-doc-file" accept=".pdf,.txt,.md">
@@ -1244,6 +1581,50 @@ I&apos;m {{sender_name}}, currently ...
         </div>
     </div>
 
+    <!-- Privacy Notice Modal -->
+    <div class="modal-overlay" id="privacy-modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header" style="border-bottom-color: #28a745;">
+                <h3>🔒 Privacy Notice</h3>
+            </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 4em; margin-bottom: 10px;">🛡️</div>
+                <h4 style="color: #333; margin-bottom: 15px;">Your Privacy Matters to Us</h4>
+            </div>
+            <div class="profile-section" style="background: #f8f9ff; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <p style="color: #555; line-height: 1.8; margin-bottom: 15px;">
+                    <strong>We want you to know:</strong>
+                </p>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 10px 0; border-bottom: 1px solid #e0e0e0; display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="color: #28a745; font-size: 1.2em;">✓</span>
+                        <span>Your personal information and answers are <strong>only used</strong> for matching targets and generating professional emails.</span>
+                    </li>
+                    <li style="padding: 10px 0; border-bottom: 1px solid #e0e0e0; display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="color: #28a745; font-size: 1.2em;">✓</span>
+                        <span>Your data will <strong>not be shared</strong> with any third parties or used for any other purposes.</span>
+                    </li>
+                    <li style="padding: 10px 0; border-bottom: 1px solid #e0e0e0; display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="color: #28a745; font-size: 1.2em;">✓</span>
+                        <span>Uploaded resumes and profile information are processed <strong>securely</strong> and not stored permanently.</span>
+                    </li>
+                    <li style="padding: 10px 0; display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="color: #28a745; font-size: 1.2em;">✓</span>
+                        <span>You can close this app at any time and your session data will be cleared.</span>
+                    </li>
+                </ul>
+            </div>
+            <div style="text-align: center;">
+                <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
+                    By continuing, you acknowledge that you have read and understood this privacy notice.
+                </p>
+                <button class="btn btn-primary" id="btn-privacy-accept" style="min-width: 200px;">
+                    ✅ I Understand, Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Target Profile Modal -->
     <div class="modal-overlay" id="profile-modal">
         <div class="modal-content">
@@ -1288,6 +1669,10 @@ I&apos;m {{sender_name}}, currently ...
     <script>
         // Global state
         const state = {
+            mode: null,  // 'quick' or 'professional'
+            proTrack: null,  // 'finance' or 'academic' (for professional mode)
+            proTargetChoice: null,  // 'have' or 'need' (for professional mode)
+            proPreferenceHistory: [],  // Professional mode preference Q&A
             step: 1,
             purpose: null,
             purposeCustom: '',
@@ -1338,6 +1723,8 @@ I&apos;m {{sender_name}}, currently ...
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            setupModeSelection();
+            setupProfessionalMode();
             setupOptionCards();
             setupChoiceButtons();
             setupFileUpload();
@@ -1348,6 +1735,501 @@ I&apos;m {{sender_name}}, currently ...
             setupTargetDocUpload();
             setupPreferenceForm();
         });
+
+        // Setup mode selection
+        function setupModeSelection() {
+            const modeCards = document.querySelectorAll('#mode-selection .mode-card');
+            const modeNextBtn = document.getElementById('btn-mode-next');
+            
+            modeCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    // Skip if disabled
+                    if (this.classList.contains('disabled')) {
+                        return;
+                    }
+                    
+                    // Deselect all, select current
+                    modeCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    state.mode = this.dataset.mode;
+                    
+                    // Enable continue button
+                    modeNextBtn.disabled = false;
+                });
+            });
+            
+            // Mode continue button - show privacy notice first
+            modeNextBtn.addEventListener('click', function() {
+                if (!state.mode) return;
+                
+                // Show privacy modal
+                document.getElementById('privacy-modal').classList.add('visible');
+            });
+            
+            // Privacy accept button
+            document.getElementById('btn-privacy-accept').addEventListener('click', function() {
+                document.getElementById('privacy-modal').classList.remove('visible');
+                document.getElementById('mode-selection').classList.add('hidden');
+                
+                if (state.mode === 'quick') {
+                    // Quick Start: Show progress and step 1
+                    document.getElementById('progress-container').classList.remove('hidden');
+                    document.getElementById('step-1').classList.remove('hidden');
+                    // Pre-configure for Quick Start
+                    state.hasResume = false;
+                } else if (state.mode === 'professional') {
+                    // Professional: Show track selection
+                    document.getElementById('pro-track-selection').classList.remove('hidden');
+                }
+            });
+        }
+
+        // Setup Professional Mode
+        function setupProfessionalMode() {
+            // Track selection (Finance / Academic)
+            const trackCards = document.querySelectorAll('#pro-track-selection .mode-card');
+            const trackNextBtn = document.getElementById('btn-track-next');
+            
+            trackCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    trackCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    state.proTrack = this.dataset.track;
+                    trackNextBtn.disabled = false;
+                });
+            });
+            
+            // Track back button
+            document.getElementById('btn-track-back').addEventListener('click', function() {
+                document.getElementById('pro-track-selection').classList.add('hidden');
+                document.getElementById('mode-selection').classList.remove('hidden');
+                state.proTrack = null;
+                trackCards.forEach(c => c.classList.remove('selected'));
+                trackNextBtn.disabled = true;
+            });
+            
+            // Track next button -> Resume upload
+            trackNextBtn.addEventListener('click', function() {
+                document.getElementById('pro-track-selection').classList.add('hidden');
+                document.getElementById('pro-resume-upload').classList.remove('hidden');
+                // Update display text
+                const trackDisplay = state.proTrack === 'finance' ? 'Finance' : 'Academic';
+                document.getElementById('selected-track-display').textContent = trackDisplay;
+            });
+            
+            // Resume dropzone
+            const dropzone = document.getElementById('pro-resume-dropzone');
+            const fileInput = document.getElementById('pro-resume-file');
+            
+            dropzone.addEventListener('click', () => fileInput.click());
+            
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = '#764ba2';
+                dropzone.style.background = '#f0f4ff';
+            });
+            
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.style.borderColor = '#667eea';
+                dropzone.style.background = '#f8f9ff';
+            });
+            
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = '#667eea';
+                dropzone.style.background = '#f8f9ff';
+                if (e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    uploadProResume(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    uploadProResume(this.files[0]);
+                }
+            });
+            
+            // Resume back button
+            document.getElementById('btn-resume-back').addEventListener('click', function() {
+                document.getElementById('pro-resume-upload').classList.add('hidden');
+                document.getElementById('pro-track-selection').classList.remove('hidden');
+            });
+            
+            // Resume next button -> Target choice
+            document.getElementById('btn-resume-next').addEventListener('click', function() {
+                document.getElementById('pro-resume-upload').classList.add('hidden');
+                document.getElementById('pro-target-choice').classList.remove('hidden');
+            });
+            
+            // Target choice cards
+            const targetChoiceCards = document.querySelectorAll('#pro-target-choice .mode-card');
+            const targetChoiceNextBtn = document.getElementById('btn-target-choice-next');
+            
+            targetChoiceCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    targetChoiceCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    state.proTargetChoice = this.dataset.targetChoice;
+                    targetChoiceNextBtn.disabled = false;
+                });
+            });
+            
+            // Target choice back button
+            document.getElementById('btn-target-choice-back').addEventListener('click', function() {
+                document.getElementById('pro-target-choice').classList.add('hidden');
+                document.getElementById('pro-resume-upload').classList.remove('hidden');
+            });
+            
+            // Target choice next button
+            targetChoiceNextBtn.addEventListener('click', function() {
+                document.getElementById('pro-target-choice').classList.add('hidden');
+                
+                if (state.proTargetChoice === 'have') {
+                    // User has targets - go to Step 1 (Purpose) then Step 3 (manual target input)
+                    document.getElementById('progress-container').classList.remove('hidden');
+                    document.getElementById('step-1').classList.remove('hidden');
+                    // Set purpose based on track
+                    state.purpose = state.proTrack === 'academic' ? 'academic' : 'job';
+                    state.field = state.proTrack === 'academic' ? 'ai-ml' : 'finance';
+                    state.hasResume = true;
+                    state.hasTarget = true;
+                } else {
+                    // User needs recommendations - show preference questions
+                    document.getElementById('pro-preferences').classList.remove('hidden');
+                    const trackDisplay = state.proTrack === 'finance' ? 'Finance' : 'Academic';
+                    document.getElementById('pref-track-display').textContent = trackDisplay;
+                    loadProPreferenceQuestions();
+                }
+            });
+            
+            // Preference back button
+            document.getElementById('btn-pref-back').addEventListener('click', function() {
+                document.getElementById('pro-preferences').classList.add('hidden');
+                document.getElementById('pro-target-choice').classList.remove('hidden');
+            });
+            
+            // Find targets button
+            document.getElementById('btn-find-pro-targets').addEventListener('click', async function() {
+                await findProTargets();
+            });
+        }
+
+        // Upload resume for Professional mode
+        async function uploadProResume(file) {
+            const loading = document.getElementById('pro-upload-loading');
+            const success = document.getElementById('pro-resume-success');
+            const nextBtn = document.getElementById('btn-resume-next');
+            
+            loading.classList.remove('hidden');
+            success.classList.add('hidden');
+            
+            const formData = new FormData();
+            formData.append('pdf', file);
+            formData.append('session_id', 'pro-session');
+            
+            try {
+                const response = await fetch('/api/upload-sender-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    state.senderProfile = data.profile;
+                    loading.classList.add('hidden');
+                    success.classList.remove('hidden');
+                    nextBtn.disabled = false;
+                    
+                    // Show resume summary
+                    const summary = document.getElementById('pro-resume-summary');
+                    summary.innerHTML = `
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                            <div>
+                                <strong style="color: #667eea;">👤 Name:</strong>
+                                <p style="margin: 5px 0;">${data.profile.name || 'Not detected'}</p>
+                            </div>
+                            <div>
+                                <strong style="color: #667eea;">🎓 Education:</strong>
+                                <p style="margin: 5px 0;">${(data.profile.education || []).slice(0, 2).join(', ') || 'Not detected'}</p>
+                            </div>
+                            <div>
+                                <strong style="color: #667eea;">💼 Experience:</strong>
+                                <p style="margin: 5px 0;">${(data.profile.experiences || []).slice(0, 2).join(', ') || 'Not detected'}</p>
+                            </div>
+                            <div>
+                                <strong style="color: #667eea;">🛠️ Skills:</strong>
+                                <p style="margin: 5px 0;">${(data.profile.skills || []).slice(0, 5).join(', ') || 'Not detected'}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                loading.classList.add('hidden');
+                alert('Error uploading resume: ' + error.message);
+            }
+        }
+
+        // Load preference questions for Professional mode
+        async function loadProPreferenceQuestions() {
+            const container = document.getElementById('pro-preference-questions');
+            const loading = document.getElementById('pro-pref-loading');
+            
+            container.innerHTML = '';
+            loading.classList.remove('hidden');
+            
+            try {
+                const response = await fetch('/api/next-target-question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        purpose: state.proTrack === 'academic' ? 'Academic research and PhD opportunities' : 'Finance and investment opportunities',
+                        field: state.proTrack === 'academic' ? 'Academic Research' : 'Finance',
+                        sender_profile: state.senderProfile,
+                        history: state.proPreferenceHistory,
+                        max_questions: 5
+                    })
+                });
+                
+                const data = await response.json();
+                loading.classList.remove('hidden');
+                
+                if (data.success) {
+                    loading.classList.add('hidden');
+                    renderProPreferenceQuestion(data);
+                } else {
+                    throw new Error(data.error || 'Failed to load questions');
+                }
+            } catch (error) {
+                loading.classList.add('hidden');
+                alert('Error loading questions: ' + error.message);
+            }
+        }
+
+        // Render a single preference question for Professional mode
+        function renderProPreferenceQuestion(result) {
+            const container = document.getElementById('pro-preference-questions');
+            container.innerHTML = '';
+            
+            if (result.done) {
+                const info = document.createElement('div');
+                info.className = 'notice';
+                info.style.background = '#d4edda';
+                info.style.borderColor = '#28a745';
+                info.style.color = '#155724';
+                info.innerHTML = `<span class="icon">✅</span> Great! We have enough information to find your ideal targets. Click "Find My Targets" below.`;
+                container.appendChild(info);
+                return;
+            }
+
+            const questionText = result.question || 'What type of professionals would you like to connect with?';
+            const options = Array.isArray(result.options) ? result.options : null;
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            
+            let innerHtml = `<h4>Q${state.proPreferenceHistory.length + 1}: ${questionText}</h4>`;
+
+            if (options && options.length > 0) {
+                innerHtml += `
+                    <div class="question-options" id="pro-question-options">
+                        ${options.map((opt, idx) => `
+                            <div class="question-option" data-index="${idx}">${opt}</div>
+                        `).join('')}
+                    </div>
+                    <div class="question-custom-input" id="pro-question-custom-wrapper">
+                        <textarea id="pro-question-custom-input" rows="2" placeholder="Your custom answer..."></textarea>
+                    </div>
+                `;
+            } else {
+                innerHtml += `
+                    <div class="question-custom-input visible">
+                        <textarea id="pro-question-answer-input" rows="3" placeholder="Type your answer here..."></textarea>
+                    </div>
+                `;
+            }
+
+            innerHtml += `
+                <div class="btn-group" style="margin-top: 10px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" id="btn-pro-skip-question">Skip</button>
+                    <button class="btn btn-primary" id="btn-pro-next-question" disabled>Next Question</button>
+                </div>`;
+
+            card.innerHTML = innerHtml;
+            container.appendChild(card);
+
+            const nextBtn = document.getElementById('btn-pro-next-question');
+            const skipBtn = document.getElementById('btn-pro-skip-question');
+            let selectedIndex = null;
+
+            if (options && options.length > 0) {
+                const optionEls = Array.from(document.querySelectorAll('#pro-question-options .question-option'));
+                const customWrapper = document.getElementById('pro-question-custom-wrapper');
+                const customInput = document.getElementById('pro-question-custom-input');
+
+                function updateNextEnabled() {
+                    if (selectedIndex === null) {
+                        nextBtn.disabled = true;
+                        return;
+                    }
+                    const isLast = selectedIndex === options.length - 1;
+                    if (isLast) {
+                        nextBtn.disabled = !customInput.value.trim();
+                    } else {
+                        nextBtn.disabled = false;
+                    }
+                }
+
+                optionEls.forEach(el => {
+                    el.addEventListener('click', function() {
+                        optionEls.forEach(o => o.classList.remove('selected'));
+                        this.classList.add('selected');
+                        selectedIndex = parseInt(this.dataset.index, 10);
+                        const isLast = selectedIndex === options.length - 1;
+                        if (isLast) {
+                            customWrapper.classList.add('visible');
+                        } else {
+                            customWrapper.classList.remove('visible');
+                        }
+                        updateNextEnabled();
+                    });
+                });
+
+                if (customInput) {
+                    customInput.addEventListener('input', updateNextEnabled);
+                }
+            } else {
+                const answerInput = document.getElementById('pro-question-answer-input');
+                answerInput.addEventListener('input', function() {
+                    nextBtn.disabled = !this.value.trim();
+                });
+            }
+
+            async function submitAndLoadNext(answer) {
+                state.proPreferenceHistory.push({
+                    question: questionText,
+                    answer: answer || ''
+                });
+                
+                const loading = document.getElementById('pro-pref-loading');
+                loading.classList.remove('hidden');
+                
+                try {
+                    const response = await fetch('/api/next-target-question', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            purpose: state.proTrack === 'academic' ? 'Academic research and PhD opportunities' : 'Finance and investment opportunities',
+                            field: state.proTrack === 'academic' ? 'Academic Research' : 'Finance',
+                            sender_profile: state.senderProfile,
+                            history: state.proPreferenceHistory,
+                            max_questions: 5
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    loading.classList.add('hidden');
+                    
+                    if (data.success) {
+                        renderProPreferenceQuestion(data);
+                    } else {
+                        throw new Error(data.error || 'Failed to load next question');
+                    }
+                } catch (error) {
+                    loading.classList.add('hidden');
+                    alert('Error: ' + error.message);
+                }
+            }
+
+            nextBtn.addEventListener('click', function() {
+                let answer = '';
+                if (options && options.length > 0) {
+                    if (selectedIndex === null) return;
+                    const isLast = selectedIndex === options.length - 1;
+                    if (isLast) {
+                        const customInput = document.getElementById('pro-question-custom-input');
+                        if (!customInput.value.trim()) return;
+                        answer = customInput.value.trim();
+                    } else {
+                        answer = options[selectedIndex];
+                    }
+                } else {
+                    const answerInput = document.getElementById('pro-question-answer-input');
+                    answer = (answerInput.value || '').trim();
+                    if (!answer) return;
+                }
+                submitAndLoadNext(answer);
+            });
+
+            skipBtn.addEventListener('click', function() {
+                submitAndLoadNext('');
+            });
+        }
+
+        // Find targets for Professional mode
+        async function findProTargets() {
+            const container = document.getElementById('pro-preference-questions');
+            const loading = document.getElementById('pro-pref-loading');
+            
+            loading.classList.remove('hidden');
+            container.innerHTML = '<div class="notice"><span class="icon">🔍</span> Searching for the best matches based on your profile and preferences...</div>';
+            
+            try {
+                const prefExtra = state.proPreferenceHistory.length > 0
+                    ? state.proPreferenceHistory.map((qa, idx) => `Q${idx + 1}: ${qa.question}\nA${idx + 1}: ${qa.answer}`).join('\n\n')
+                    : '';
+                
+                const response = await fetch('/api/find-recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        purpose: state.proTrack === 'academic' ? 'Academic research and PhD opportunities' : 'Finance career opportunities',
+                        field: state.proTrack === 'academic' ? 'Academic Research' : 'Finance',
+                        sender_profile: state.senderProfile,
+                        preferences: {
+                            track: state.proTrack,
+                            extra: prefExtra
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                loading.classList.add('hidden');
+                
+                if (data.success && data.recommendations && data.recommendations.length > 0) {
+                    state.recommendations = data.recommendations;
+                    
+                    // Transition to main flow with recommendations
+                    document.getElementById('pro-preferences').classList.add('hidden');
+                    document.getElementById('progress-container').classList.remove('hidden');
+                    
+                    // Set up state for main flow
+                    state.purpose = state.proTrack === 'academic' ? 'academic' : 'job';
+                    state.field = state.proTrack === 'academic' ? 'ai-ml' : 'finance';
+                    state.hasResume = true;
+                    state.hasTarget = false;
+                    
+                    // Go directly to Step 3 with recommendations pre-loaded
+                    goToStep(3);
+                    
+                    // Show recommendation section with results
+                    document.getElementById('target-choice').querySelector('[data-value="no"]').click();
+                    document.getElementById('recommendation-section').classList.remove('hidden');
+                    document.getElementById('target-preferences').classList.add('hidden');
+                    renderRecommendations(data.recommendations);
+                    document.getElementById('rec-actions').style.display = 'flex';
+                } else {
+                    throw new Error(data.error || 'No recommendations found');
+                }
+            } catch (error) {
+                loading.classList.add('hidden');
+                container.innerHTML = `<div class="notice" style="background: #f8d7da; border-color: #dc3545; color: #721c24;">
+                    <span class="icon">❌</span> ${error.message}. Please try again or go back to adjust your preferences.
+                </div>`;
+            }
+        }
 
         // Setup option card selection
         function setupOptionCards() {
@@ -2217,6 +3099,18 @@ I&apos;m {{sender_name}}, currently ...
             // Step 1 -> Step 2
             document.getElementById('btn-step1-next').addEventListener('click', function() {
                 goToStep(2);
+                
+                // For Quick Start mode, auto-configure Step 2
+                if (state.mode === 'quick') {
+                    // Hide resume choice section
+                    document.getElementById('resume-choice-section').classList.add('hidden');
+                    // Show quick start notice
+                    document.getElementById('quick-start-notice').classList.remove('hidden');
+                    // Auto-show questionnaire
+                    document.getElementById('questionnaire-section').classList.add('visible');
+                    // Load questionnaire
+                    loadQuestionnaire();
+                }
             });
 
             // Step 2 Back
@@ -2231,6 +3125,14 @@ I&apos;m {{sender_name}}, currently ...
                     await buildProfileFromQuestionnaire();
                 }
                 goToStep(3);
+                
+                // For Quick Start mode, hide document upload in Step 3
+                if (state.mode === 'quick') {
+                    const docUploadSection = document.getElementById('target-doc-upload-section');
+                    if (docUploadSection) {
+                        docUploadSection.classList.add('hidden');
+                    }
+                }
             });
 
             // Step 3 Back
