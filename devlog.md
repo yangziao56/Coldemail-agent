@@ -3,7 +3,7 @@
 ## 2025-12-13: UI Polish (Apple-like Visual Refresh)
 
 - Updated `templates/index_v2.html` styling to a lighter, glassy “Apple-like” look (subtle gradients, soft borders/shadows, blue accent).
-- Quick Start questionnaire now shows all 5 questions at once (generated in one request).
+- Quick Start: Step 2 now asks for optional resume/profile link/notes first; only if those are empty it shows the 5-question questionnaire (generated in one request).
 
 ## 2025-12-12: v3.0 - Mode Selection (Quick Start & Professional) 🚀
 

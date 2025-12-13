@@ -1478,7 +1478,7 @@
             <!-- Quick Start Mode Notice -->
             <div class="notice hidden" id="quick-start-notice" style="background: #e3f2fd; border-color: #2196f3; color: #1565c0;">
                 <span class="icon">⚡</span>
-                <strong>Quick Start Mode:</strong> Answer a few questions below and we'll build your profile automatically!
+                <strong>Quick Start Mode:</strong> (Optional) upload a resume and/or add your profile link/notes. If you leave everything blank, we’ll ask 5 quick questions to build your profile.
             </div>
 
             <!-- Resume Upload Section -->
@@ -1498,18 +1498,6 @@
                 </div>
             </div>
 
-            <!-- Questionnaire Section -->
-            <div class="questionnaire" id="questionnaire-section">
-                <h3 style="margin-bottom: 20px; color: #333;">Quick Profile Builder</h3>
-                <div id="questions-container">
-                    <!-- Questions will be dynamically loaded here -->
-                </div>
-                <div class="loading" id="questionnaire-loading">
-                    <div class="spinner"></div>
-                    <div class="loading-text">Generating personalized questions...</div>
-                </div>
-            </div>
-
             <!-- Optional sender profile link & notes -->
             <div class="form-group">
                 <label>Optional: Your LinkedIn or profile link</label>
@@ -1521,6 +1509,21 @@
                     You can paste your LinkedIn “About” section, headline, or any highlights you want the AI to see.
                 </p>
                 <textarea id="sender-profile-extra" rows="3" placeholder="Paste a short description, headline, or key points from your profile..."></textarea>
+            </div>
+
+            <!-- Questionnaire Section (Quick Start fallback) -->
+            <div class="questionnaire" id="questionnaire-section">
+                <h3 style="margin-bottom: 10px; color: var(--text);">Quick Profile Builder</h3>
+                <p style="font-size: 13px; color: var(--muted); margin-bottom: 14px;">
+                    No resume or profile notes provided — answer these 5 quick questions instead.
+                </p>
+                <div id="questions-container">
+                    <!-- Questions will be dynamically loaded here -->
+                </div>
+                <div class="loading" id="questionnaire-loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Generating personalized questions...</div>
+                </div>
             </div>
 
             <div class="btn-group">
@@ -2877,7 +2880,8 @@ I&apos;m {{sender_name}}, currently ...
                     state.senderProfile = data.profile;
                     loading.classList.remove('visible');
                     success.classList.remove('hidden');
-                    document.getElementById('btn-step2-next').disabled = false;
+                    updateQuickStartQuestionnaireVisibility();
+                    checkStep2Valid();
                 } else {
                     throw new Error(data.error || 'Upload failed');
                 }
@@ -3732,14 +3736,14 @@ I&apos;m {{sender_name}}, currently ...
                 
                 // For Quick Start mode, auto-configure Step 2
                 if (state.mode === 'quick') {
-                    // Hide resume choice section
+                    // Hide resume choice section (Quick Start uses optional inputs)
                     document.getElementById('resume-choice-section').classList.add('hidden');
                     // Show quick start notice
                     document.getElementById('quick-start-notice').classList.remove('hidden');
-                    // Auto-show questionnaire
-                    document.getElementById('questionnaire-section').classList.add('visible');
-                    // Load questionnaire
-                    loadQuestionnaire();
+                    // Show optional resume upload (Quick Start only)
+                    document.getElementById('resume-upload-section').classList.remove('hidden');
+                    // Show questionnaire only if no other context is provided
+                    updateQuickStartQuestionnaireVisibility();
                 }
             });
 
@@ -3750,7 +3754,9 @@ I&apos;m {{sender_name}}, currently ...
 
             // Step 2 -> Step 3
             document.getElementById('btn-step2-next').addEventListener('click', async function() {
-                if (!state.hasResume && state.questionnaireHistory.length > 0) {
+                if (state.mode === 'quick') {
+                    await ensureQuickStartSenderProfile();
+                } else if (!state.hasResume && state.questionnaireHistory.length > 0) {
                     // Build profile from questionnaire
                     await buildProfileFromQuestionnaire();
                 }
@@ -3901,6 +3907,60 @@ I&apos;m {{sender_name}}, currently ...
                 }
             } catch (error) {
                 console.error('Error building profile:', error);
+            }
+        }
+
+        function updateQuickStartQuestionnaireVisibility() {
+            if (state.mode !== 'quick') return;
+
+            const questionnaire = document.getElementById('questionnaire-section');
+            if (!questionnaire) return;
+
+            const hasResumeProfile = Boolean(state.senderProfile);
+            const hasLink = Boolean((state.senderProfileLink || '').trim());
+            const hasExtra = Boolean((state.senderProfileExtra || '').trim());
+            const hasAnyContext = hasResumeProfile || hasLink || hasExtra;
+
+            if (hasAnyContext) {
+                questionnaire.classList.remove('visible');
+                return;
+            }
+
+            questionnaire.classList.add('visible');
+
+            // Load questions once (batch) when needed
+            const hasQuestions = Array.isArray(state.questionnaireQuestions) && state.questionnaireQuestions.length > 0;
+            if (!hasQuestions) {
+                loadQuestionnaire();
+            }
+        }
+
+        async function ensureQuickStartSenderProfile() {
+            if (state.mode !== 'quick') return;
+
+            if (state.senderProfile) return;
+
+            const link = (state.senderProfileLink || '').trim();
+            const extra = (state.senderProfileExtra || '').trim();
+            if (link || extra) {
+                let rawText = '';
+                if (link) rawText += `Profile link: ${link}`;
+                if (extra) rawText += `${rawText ? '\n\n' : ''}Additional profile notes:\n${extra}`;
+                state.senderProfile = {
+                    name: 'User',
+                    raw_text: rawText,
+                    education: [],
+                    experiences: [],
+                    skills: [],
+                    projects: []
+                };
+                return;
+            }
+
+            const hasAnyAnswer = Array.isArray(state.questionnaireHistory)
+                && state.questionnaireHistory.some(qa => (qa.answer || '').trim().length > 0);
+            if (hasAnyAnswer) {
+                await buildProfileFromQuestionnaire();
             }
         }
 
@@ -4086,11 +4146,15 @@ I&apos;m {{sender_name}}, currently ...
             if (senderLinkInput) {
                 senderLinkInput.addEventListener('input', function() {
                     state.senderProfileLink = this.value;
+                    updateQuickStartQuestionnaireVisibility();
+                    checkStep2Valid();
                 });
             }
             if (senderExtraInput) {
                 senderExtraInput.addEventListener('input', function() {
                     state.senderProfileExtra = this.value;
+                    updateQuickStartQuestionnaireVisibility();
+                    checkStep2Valid();
                 });
             }
             if (targetLinkInput) {
@@ -4334,6 +4398,16 @@ I&apos;m {{sender_name}}, currently ...
             let valid = false;
             if (state.hasResume && state.senderProfile) {
                 valid = true;
+            } else if (state.mode === 'quick') {
+                const hasQuickContext = Boolean(state.senderProfile)
+                    || Boolean((state.senderProfileLink || '').trim())
+                    || Boolean((state.senderProfileExtra || '').trim());
+                if (hasQuickContext) {
+                    valid = true;
+                } else {
+                    valid = Array.isArray(state.questionnaireHistory)
+                        && state.questionnaireHistory.some(qa => (qa.answer || '').trim().length > 0);
+                }
             } else if (!state.hasResume) {
                 // For questionnaires: require at least one non-empty answer
                 valid = Array.isArray(state.questionnaireHistory)

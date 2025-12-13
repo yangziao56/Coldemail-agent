@@ -11,7 +11,7 @@ An intelligent cold email generation tool with a step-by-step wizard interface.
 - **Mode Selection After Login**
   - **Quick Start Mode**: For users without a resume
     - No resume upload required
-    - Build profile through a 5-question questionnaire
+    - Optional: add resume/profile link/notes; otherwise answer a 5-question questionnaire
     - Perfect for beginners or quick outreach
   - **Professional Mode**: For users with a resume
     - Resume upload required
