@@ -5,6 +5,7 @@
 - Updated `templates/index_v2.html` styling to a lighter, glassy “Apple-like” look (subtle gradients, soft borders/shadows, blue accent).
 - Quick Start: Step 2 now asks for optional resume/profile link/notes first; only if those are empty it shows the 5-question questionnaire (generated in one request).
 - Quick Start: resume upload uses the same drag & drop dropzone pattern as Professional mode.
+- Quick Start: the 5-question builder is generated only after clicking “Generate Questions”.
 
 ## 2025-12-12: v3.0 - Mode Selection (Quick Start & Professional) 🚀
 

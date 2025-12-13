@@ -102,3 +102,4 @@
 - Quick Start 的 5 道问卷题改为“一次性展示”，便于快速填写与回看。
 - Quick Start：Step 2 先收集可选简历/LinkedIn/补充信息；仅当这些都为空时，才展示 5 道问卷作为兜底。
 - Quick Start：可选简历上传改为拖拽/点击上传的 dropzone，和 Professional 统一交互风格。
+- Quick Start：问卷题不再自动生成；当简历/LinkedIn/补充信息都为空时，点击 “Generate Questions” 才会生成并展示 5 题。

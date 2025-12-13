@@ -1522,6 +1522,13 @@
                 <p style="font-size: 13px; color: var(--muted); margin-bottom: 14px;">
                     No resume or profile notes provided — answer these 5 quick questions instead.
                 </p>
+                <div class="notice hidden" id="quick-question-prompt" style="margin-bottom: 14px;">
+                    <span class="icon">📝</span>
+                    Generate 5 quick questions to build your profile.
+                    <div class="btn-group" style="margin-top: 12px; justify-content: flex-end;">
+                        <button class="btn btn-primary btn-icon" id="btn-generate-questions" type="button">Generate Questions</button>
+                    </div>
+                </div>
                 <div id="questions-container">
                     <!-- Questions will be dynamically loaded here -->
                 </div>
@@ -1936,6 +1943,7 @@ I&apos;m {{sender_name}}, currently ...
             questionnaireQuestions: [], // Batch questions (Quick Start)
             questionnaireIndex: 0,
             questionnaireAnswers: [], // string[] aligned to questionnaireQuestions
+            quickQuestionsEnabled: false, // Quick Start: only show questions after explicit action
             hasTarget: null,
             selectedTargets: [],  // Array of selected targets
             currentEmailIndex: 0,  // Current email being viewed
@@ -1993,6 +2001,7 @@ I&apos;m {{sender_name}}, currently ...
                 questionnaireQuestions: [],
                 questionnaireIndex: 0,
                 questionnaireAnswers: [],
+                quickQuestionsEnabled: false,
                 hasTarget: null,
                 selectedTargets: [],
                 currentEmailIndex: 0,
@@ -2131,6 +2140,9 @@ I&apos;m {{sender_name}}, currently ...
                 if (el) el.classList.remove('visible');
             });
 
+            const quickPrompt = document.getElementById('quick-question-prompt');
+            if (quickPrompt) quickPrompt.classList.add('hidden');
+
             document.querySelectorAll('input[type="text"], textarea').forEach(el => {
                 el.value = '';
             });
@@ -2209,6 +2221,7 @@ I&apos;m {{sender_name}}, currently ...
             setupFileUpload();
             setupProfileLinkInputs();
             setupNavigationButtons();
+            setupQuickStartQuestionPrompt();
             setupGenerationMode();
             setupRegenerate();
             setupTargetDocUpload();
@@ -3949,6 +3962,7 @@ I&apos;m {{sender_name}}, currently ...
 
             const questionnaire = document.getElementById('questionnaire-section');
             if (!questionnaire) return;
+            const prompt = document.getElementById('quick-question-prompt');
 
             const hasResumeProfile = Boolean(state.senderProfile);
             const hasLink = Boolean((state.senderProfileLink || '').trim());
@@ -3956,17 +3970,34 @@ I&apos;m {{sender_name}}, currently ...
             const hasAnyContext = hasResumeProfile || hasLink || hasExtra;
 
             if (hasAnyContext) {
+                if (prompt) prompt.classList.add('hidden');
                 questionnaire.classList.remove('visible');
                 return;
             }
 
             questionnaire.classList.add('visible');
 
-            // Load questions once (batch) when needed
+            if (!state.quickQuestionsEnabled) {
+                if (prompt) prompt.classList.remove('hidden');
+                return;
+            }
+
+            if (prompt) prompt.classList.add('hidden');
+
             const hasQuestions = Array.isArray(state.questionnaireQuestions) && state.questionnaireQuestions.length > 0;
             if (!hasQuestions) {
                 loadQuestionnaire();
             }
+        }
+
+        function setupQuickStartQuestionPrompt() {
+            const btn = document.getElementById('btn-generate-questions');
+            if (!btn) return;
+            btn.addEventListener('click', function() {
+                state.quickQuestionsEnabled = true;
+                updateQuickStartQuestionnaireVisibility();
+                checkStep2Valid();
+            });
         }
 
         async function ensureQuickStartSenderProfile() {
@@ -4439,7 +4470,8 @@ I&apos;m {{sender_name}}, currently ...
                 if (hasQuickContext) {
                     valid = true;
                 } else {
-                    valid = Array.isArray(state.questionnaireHistory)
+                    valid = Boolean(state.quickQuestionsEnabled)
+                        && Array.isArray(state.questionnaireHistory)
                         && state.questionnaireHistory.some(qa => (qa.answer || '').trim().length > 0);
                 }
             } else if (!state.hasResume) {
