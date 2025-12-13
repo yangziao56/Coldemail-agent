@@ -90,6 +90,7 @@ Mode Selection → Track (Finance/Academic) → Resume Upload → Target Choice
 - Resume summary display after upload
 - Track-aware preference questions
 - Seamless transition from professional flow to main email generation
+- Enlarged the Step 5 “Custom” tone instruction textbox for easier editing
 
 ---
 

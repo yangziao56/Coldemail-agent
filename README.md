@@ -80,7 +80,7 @@ An intelligent cold email generation tool with a step-by-step wizard interface.
     - ✂️ More Concise
     - 📝 More Detailed
     - ✏️ Custom instructions
-  - Copy individual or all emails
+  - Edit Subject/Body and copy subject, email, or all emails
 
 ### v1.x - CLI Tool
 
