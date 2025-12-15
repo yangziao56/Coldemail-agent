@@ -88,7 +88,10 @@ flowchart TD
   class selected,rec_list,email_out out;
 ```
 
-Context “richness” (roughly): resume/doc uploads > questionnaire/web enrichment > link/notes only.
+Quick reading:
+- Search people (`/api/find-recommendations`): uses Context A + Context B + Context P (if provided).
+- Generate email (`/api/generate-email`): uses Context A + Context B + Context C + Context D (if template provided).
+- Context richness (roughly): resume/doc uploads > questionnaire/web enrichment > link/notes only.
 
 ## Features
 
