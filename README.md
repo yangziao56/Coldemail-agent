@@ -6,44 +6,62 @@ An intelligent cold email generation tool with a step-by-step wizard interface.
 
 ## Workflow
 
-High-level workflow of the wizard UI (`templates/index_v2.html`) and backend APIs (`app.py`):
+Workflow of the wizard UI (`templates/index_v2.html`) and backend APIs (`app.py`), focusing on when each context is collected (top → bottom) and what context each core call can use (dotted arrows):
 
 ```mermaid
 flowchart TD
-  start([Start]) --> login["Login: /login"]
-  login --> mode{Mode}
-  mode -->|Quick Start| step1["Step 1: Purpose + Field"]
-  mode -->|Professional| track["Track selection"] --> step1
+  start([Start]) --> login["Login: /login"] --> mode{Mode}
 
-  step1 --> step2["Step 2: Build sender profile"]
-  step2 -->|Upload PDF| sender_pdf["POST /api/upload-sender-pdf"]
-  step2 -->|Link/notes only| sender_free["Use link/notes as raw_text"]
-  step2 -->|Questionnaire| q_gen["POST /api/generate-questionnaire OR /api/next-question"]
-  q_gen --> q_build["POST /api/profile-from-questionnaire"]
-  sender_pdf --> sender["SenderProfile"]
-  sender_free --> sender
-  q_build --> sender
+  mode -->|Quick Start| qs_step1["Step 1 (Quick): set intent<br/>pick purpose + field"]
+  mode -->|Professional| pro_track["Pro: select track<br/>(finance / academic)"] --> pro_intent["(Auto) set purpose + field defaults"]
 
-  sender --> step3["Step 3: Find targets"]
-  step3 --> target_src{Target source}
-  target_src -->|Manual entry| manual["Name + field"]
-  target_src -->|Upload doc| upload_doc["POST /api/upload-receiver-doc"]
-  target_src -->|Recommendations| pref_q["POST /api/next-target-question"]
-  pref_q --> recs["POST /api/find-recommendations"]
-  manual --> targets["Selected targets"]
-  upload_doc --> targets
-  recs --> targets
+  qs_step1 --> ctx_intent["Context A (Intent)<br/>purpose + field (+ derived goal/ask)"]
+  pro_intent --> ctx_intent
 
-  targets --> step4["Step 4: Generation mode (smart or template)"]
-  step4 --> step5["Step 5: Generate emails (per target)"]
-  step5 --> need_profile{Receiver profile complete?}
-  need_profile -->|Yes| gen["POST /api/generate-email (template optional)"]
-  need_profile -->|No| search["POST /api/search-receiver"] --> gen
-  gen --> emails["Emails (subject + body)"]
-  emails --> rewrite{Rewrite style?}
-  rewrite -->|Yes| regen["POST /api/regenerate-email"] --> emails
-  rewrite -->|No| done([Done])
+  ctx_intent --> step2["Step 2: collect sender context"]
+  step2 --> sender_src{Sender source}
+  sender_src -->|Resume PDF (required in Pro, optional in Quick)| sender_pdf["POST /api/upload-sender-pdf"] --> ctx_sender_rich["Context B (Sender, rich)<br/>name/edu/exp/skills/projects/raw_text<br/>(+ optional link/notes)"]
+  sender_src -->|Questionnaire (fallback in Quick)| q_flow["Q&A<br/>POST /api/generate-questionnaire /api/next-question<br/>then POST /api/profile-from-questionnaire"] --> ctx_sender_mid["Context B (Sender, medium)<br/>profile inferred from answers"]
+  sender_src -->|Link/notes only (Quick)| ctx_sender_light["Context B (Sender, light)<br/>raw_text from link/notes"]
+
+  ctx_sender_rich --> step3["Step 3: find targets"]
+  ctx_sender_mid --> step3
+  ctx_sender_light --> step3
+
+  step3 --> targets_src{How to get targets?}
+  targets_src -->|Manual list| manual_targets["Manual targets<br/>name + field"] --> selected["Selected targets"]
+  targets_src -->|Upload receiver doc| upload_doc["POST /api/upload-receiver-doc"] --> ctx_receiver_doc["Context C (Receiver, rich)<br/>receiver_profile from doc"] --> selected
+
+  targets_src -->|AI recommendations| pref_q["Preference Q&A (optional)<br/>POST /api/next-target-question"] --> ctx_prefs["Context P (Targeting prefs)<br/>Q&A transcript / filters"] --> rec_call["Search people: POST /api/find-recommendations<br/>(Gemini Search grounding by default)"]
+  rec_call --> rec_list["Candidate list<br/>name + position + match_score + reason<br/>(+ sources when available)"] --> selected
+
+  ctx_intent -.-> rec_call
+  ctx_sender_rich -.-> rec_call
+  ctx_sender_mid -.-> rec_call
+  ctx_sender_light -.-> rec_call
+  ctx_prefs -.-> rec_call
+
+  selected --> step4["Step 4: template (optional)"] --> ctx_template["Context D (Template)<br/>template text (optional)"]
+
+  ctx_template --> step5["Step 5: generate emails (per target)"]
+  step5 --> receiver_ready{Receiver context ready?}
+  receiver_ready -->|Already have doc profile| ctx_receiver_doc --> gen_call["Generate email: POST /api/generate-email<br/>(template optional)"]
+  receiver_ready -->|Need enrichment| search_receiver["POST /api/search-receiver<br/>(uses name + field)"] --> ctx_receiver_web["Context C (Receiver, medium)<br/>receiver_profile from web + sources<br/>(+ optional link/notes)"] --> gen_call
+
+  ctx_intent -.-> gen_call
+  ctx_sender_rich -.-> gen_call
+  ctx_sender_mid -.-> gen_call
+  ctx_sender_light -.-> gen_call
+  ctx_receiver_doc -.-> gen_call
+  ctx_receiver_web -.-> gen_call
+  ctx_template -.-> gen_call
+
+  gen_call --> email_out["Email output<br/>Subject + body"] --> regen{Rewrite style?}
+  regen -->|Yes| regen_api["POST /api/regenerate-email"] --> email_out
+  regen -->|No| done([Done])
 ```
+
+Context “richness” (roughly): resume/doc uploads > questionnaire/web enrichment > link/notes only.
 
 ## Features
 
