@@ -4,6 +4,47 @@ An intelligent cold email generation tool with a step-by-step wizard interface.
 
 🌐 **Live Demo**: [https://coldemail-agent.onrender.com/](https://coldemail-agent.onrender.com/)
 
+## Workflow
+
+High-level workflow of the wizard UI (`templates/index_v2.html`) and backend APIs (`app.py`):
+
+```mermaid
+flowchart TD
+  start([Start]) --> login["Login: /login"]
+  login --> mode{Mode}
+  mode -->|Quick Start| step1["Step 1: Purpose + Field"]
+  mode -->|Professional| track["Track selection"] --> step1
+
+  step1 --> step2["Step 2: Build sender profile"]
+  step2 -->|Upload PDF| sender_pdf["POST /api/upload-sender-pdf"]
+  step2 -->|Link/notes only| sender_free["Use link/notes as raw_text"]
+  step2 -->|Questionnaire| q_gen["POST /api/generate-questionnaire OR /api/next-question"]
+  q_gen --> q_build["POST /api/profile-from-questionnaire"]
+  sender_pdf --> sender["SenderProfile"]
+  sender_free --> sender
+  q_build --> sender
+
+  sender --> step3["Step 3: Find targets"]
+  step3 --> target_src{Target source}
+  target_src -->|Manual entry| manual["Name + field"]
+  target_src -->|Upload doc| upload_doc["POST /api/upload-receiver-doc"]
+  target_src -->|Recommendations| pref_q["POST /api/next-target-question"]
+  pref_q --> recs["POST /api/find-recommendations"]
+  manual --> targets["Selected targets"]
+  upload_doc --> targets
+  recs --> targets
+
+  targets --> step4["Step 4: Generation mode (smart or template)"]
+  step4 --> step5["Step 5: Generate emails (per target)"]
+  step5 --> need_profile{Receiver profile complete?}
+  need_profile -->|Yes| gen["POST /api/generate-email (template optional)"]
+  need_profile -->|No| search["POST /api/search-receiver"] --> gen
+  gen --> emails["Emails (subject + body)"]
+  emails --> rewrite{Rewrite style?}
+  rewrite -->|Yes| regen["POST /api/regenerate-email"] --> emails
+  rewrite -->|No| done([Done])
+```
+
 ## Features
 
 ### v3.0 (Current) - Mode Selection & Privacy 🎯
@@ -88,47 +129,6 @@ An intelligent cold email generation tool with a step-by-step wizard interface.
 - **v1.1**: Web search for receiver info (name + field only)
 - **v1.0**: PDF resume parsing
 - **v0**: JSON input support
-
-## Workflow
-
-High-level workflow of the wizard UI (`templates/index_v2.html`) and backend APIs (`app.py`):
-
-```mermaid
-flowchart TD
-  start([Start]) --> login["Login: /login"]
-  login --> mode{Mode}
-  mode -->|Quick Start| step1["Step 1: Purpose + Field"]
-  mode -->|Professional| track["Track selection"] --> step1
-
-  step1 --> step2["Step 2: Build sender profile"]
-  step2 -->|Upload PDF| sender_pdf["POST /api/upload-sender-pdf"]
-  step2 -->|Link/notes only| sender_free["Use link/notes as raw_text"]
-  step2 -->|Questionnaire| q_gen["POST /api/generate-questionnaire OR /api/next-question"]
-  q_gen --> q_build["POST /api/profile-from-questionnaire"]
-  sender_pdf --> sender["SenderProfile"]
-  sender_free --> sender
-  q_build --> sender
-
-  sender --> step3["Step 3: Find targets"]
-  step3 --> target_src{Target source}
-  target_src -->|Manual entry| manual["Name + field"]
-  target_src -->|Upload doc| upload_doc["POST /api/upload-receiver-doc"]
-  target_src -->|Recommendations| pref_q["POST /api/next-target-question"]
-  pref_q --> recs["POST /api/find-recommendations"]
-  manual --> targets["Selected targets"]
-  upload_doc --> targets
-  recs --> targets
-
-  targets --> step4["Step 4: Generation mode (smart or template)"]
-  step4 --> step5["Step 5: Generate emails (per target)"]
-  step5 --> need_profile{Receiver profile complete?}
-  need_profile -->|Yes| gen["POST /api/generate-email (template optional)"]
-  need_profile -->|No| search["POST /api/search-receiver"] --> gen
-  gen --> emails["Emails (subject + body)"]
-  emails --> rewrite{Rewrite style?}
-  rewrite -->|Yes| regen["POST /api/regenerate-email"] --> emails
-  rewrite -->|No| done([Done])
-```
 
 ## Quick Start
 
