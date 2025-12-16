@@ -3212,7 +3212,7 @@ I&apos;m {{sender_name}}, currently ...
                 if (urls.length) {
                     urls.forEach(url => {
                         const li = document.createElement('li');
-                        if (/^https?:\\/\\//i.test(url)) {
+                        if (/^https?:\/\//i.test(url)) {
                             const a = document.createElement('a');
                             a.href = url;
                             a.target = '_blank';
