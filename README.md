@@ -10,66 +10,74 @@ Workflow of the wizard UI (`templates/index_v2.html`) and backend APIs (`app.py`
 
 ```mermaid
 flowchart TD
-  start([Start]) --> login["Login: /login"] --> mode{Mode}
+  start[Start] --> login[Login] --> mode{Mode}
 
-  mode -->|Quick Start| s1_quick["Step 1: pick purpose and field"]
-  mode -->|Professional| pro_track["Professional: pick track"] --> pro_defaults["Auto: set purpose and field defaults"]
-  s1_quick --> intent["Collected: purpose and field"]
-  pro_defaults --> intent
+  mode -->|Quick| step1_q[Step 1: choose purpose and field]
+  mode -->|Professional| pro_track[Professional: choose track] --> step1_p[Set default purpose and field]
 
-  intent --> s2["Step 2: collect sender info"]
-  s2 --> sender_src{Sender source}
+  step1_q --> info_purpose_field[[purpose + field]]
+  step1_p --> info_purpose_field
 
-  sender_src -->|Resume PDF| api_sender_pdf["POST /api/upload-sender-pdf"] --> sender_resume["Collected: sender profile from resume + optional link/notes"]
+  info_purpose_field --> step2[Step 2: collect sender info]
+  step2 --> sender_src{Sender source}
 
-  sender_src -->|Questionnaire| api_q["POST /api/generate-questionnaire OR /api/next-question"]
-  api_q --> answers["Collected: questionnaire answers"]
-  answers --> api_build["POST /api/profile-from-questionnaire"] --> sender_qa["Collected: sender profile from answers"]
+  sender_src -->|Resume PDF| api_upload_sender[POST /api/upload-sender-pdf]
+  api_upload_sender --> info_sender_resume[[sender profile from resume]]
 
-  sender_src -->|Link and notes only| sender_notes["Collected: sender notes only"]
+  sender_src -->|Questionnaire| api_questions[POST /api/generate-questionnaire OR /api/next-question]
+  api_questions --> info_sender_answers[[questionnaire answers]]
+  info_sender_answers --> api_build_sender[POST /api/profile-from-questionnaire]
+  api_build_sender --> info_sender_qa[[sender profile from answers]]
 
-  sender_resume --> s3["Step 3: find targets"]
-  sender_qa --> s3
-  sender_notes --> s3
+  sender_src -->|Link and notes only| info_sender_notes[[sender notes only]]
 
-  s3 --> target_src{Targets source}
-  target_src -->|Manual| manual_targets["Manual targets: name and field"] --> selected["Selected targets"]
-  target_src -->|Upload receiver doc| api_receiver_doc["POST /api/upload-receiver-doc"] --> receiver_doc["Collected: receiver profile from document"] --> selected
+  info_sender_resume --> step3[Step 3: find targets]
+  info_sender_qa --> step3
+  info_sender_notes --> step3
 
-  target_src -->|AI recommendations| api_pref["POST /api/next-target-question"]
-  api_pref --> prefs["Collected: targeting preferences"]
-  prefs --> api_recs["Search people: POST /api/find-recommendations"] --> candidates["Candidates list + sources when available"] --> selected
+  step3 --> target_src{Targets source}
+  target_src -->|Manual| info_manual_targets[[manual targets list]] --> selected_targets[[selected targets]]
 
-  selected --> s4["Step 4: optional template"] --> template["Collected: template text if provided"]
+  target_src -->|Upload receiver doc| api_upload_receiver[POST /api/upload-receiver-doc]
+  api_upload_receiver --> info_receiver_doc[[receiver profile from document]]
+  info_receiver_doc --> selected_targets
 
-  template --> s5["Step 5: generate email per target"]
-  s5 --> receiver_ready{Receiver info ready?}
-  receiver_ready -->|Doc profile exists| receiver_doc --> api_gen["Generate email: POST /api/generate-email"]
-  receiver_ready -->|Need enrichment| api_search["POST /api/search-receiver"] --> receiver_web["Collected: receiver profile from web + sources"] --> api_gen
+  target_src -->|Recommendations| api_pref[POST /api/next-target-question]
+  api_pref --> info_target_prefs[[target preferences]]
+  info_target_prefs --> api_find_recs[POST /api/find-recommendations]
+  api_find_recs --> info_candidates[[candidate list with sources]] --> selected_targets
 
-  api_gen --> email["Email output"] --> rewrite{Rewrite?}
-  rewrite -->|Yes| api_regen["POST /api/regenerate-email"] --> email
-  rewrite -->|No| done([Done])
+  selected_targets --> step4[Step 4: optional template] --> info_template[[template text]]
 
-  %% Inputs used by core calls (dotted)
-  intent -.-> api_recs
-  sender_resume -.-> api_recs
-  sender_qa -.-> api_recs
-  sender_notes -.-> api_recs
-  prefs -.-> api_recs
+  info_template --> step5[Step 5: generate email per target]
+  step5 --> receiver_ready{Receiver profile ready?}
 
-  intent -.-> api_gen
-  sender_resume -.-> api_gen
-  sender_qa -.-> api_gen
-  sender_notes -.-> api_gen
-  receiver_doc -.-> api_gen
-  receiver_web -.-> api_gen
-  template -.-> api_gen
+  receiver_ready -->|Doc exists| info_receiver_doc --> api_generate_email[POST /api/generate-email]
+  receiver_ready -->|Need web| api_search_receiver[POST /api/search-receiver]
+  api_search_receiver --> info_receiver_web[[receiver profile from web with sources]]
+  info_receiver_web --> api_generate_email
+
+  api_generate_email --> info_email[[email output]]
+
+  %% What each core call uses (dotted arrows point to the call)
+  info_purpose_field -.-> api_find_recs
+  info_sender_resume -.-> api_find_recs
+  info_sender_qa -.-> api_find_recs
+  info_sender_notes -.-> api_find_recs
+  info_target_prefs -.-> api_find_recs
+
+  info_purpose_field -.-> api_generate_email
+  info_sender_resume -.-> api_generate_email
+  info_sender_qa -.-> api_generate_email
+  info_sender_notes -.-> api_generate_email
+  info_receiver_doc -.-> api_generate_email
+  info_receiver_web -.-> api_generate_email
+  info_template -.-> api_generate_email
 ```
 
 Quick reading:
-- Search people (`/api/find-recommendations`): uses purpose + field, sender info (resume / questionnaire / notes), and target preferences (if provided).
-- Generate email (`/api/generate-email`): uses purpose + field, sender info, receiver info (doc or web), and optional template text.
+- Search people (`POST /api/find-recommendations`): uses boxes `purpose + field`, one of (`sender profile from resume` | `sender profile from answers` | `sender notes only`), plus `target preferences` (if provided).
+- Generate email (`POST /api/generate-email`): uses boxes `purpose + field`, sender info (same), receiver profile (`receiver profile from document` or `receiver profile from web with sources`), plus optional `template text`.
 - Info richness (roughly): resume/doc uploads > questionnaire/web enrichment > link/notes only.
 
 ## Features
