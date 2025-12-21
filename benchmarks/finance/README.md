@@ -31,3 +31,41 @@
 - 找人：支持更结构化的偏好字段（例如 `target_role_titles`、`seniority`、`bank_tier`、`group`/`group_type`、`sector`、`stage`、`recruiting_context`、`contact_channels`）。
 - 写信：支持可选 `email_spec`（language/tone/长度/one-ask/value/hard rules/compliance guardrails），便于把“满意标准”写成可验证的约束。
 - 证据：profile/candidate 可带 `evidence_snippets`（id + text + url），用于强制引用与减少幻觉。
+
+## 当前 Agent 已用到 vs 还没用到（重要）
+
+下面基于当前线上/本地 Web App 的实际接口实现（`app.py` → `src/email_agent.py`）：
+
+### A) 已用到（会进 prompt / 影响输出）
+
+**找人**（`POST /api/find-recommendations`）
+- `purpose`、`field`
+- `sender_profile`: `raw_text`、`education`、`experiences`、`skills`、`projects`
+- `preferences`: `track`、`search_intent`、`must_have`、`must_not`、`location`、`contactability`、`examples`、`evidence`、`seniority`、`org_type`、`outreach_goal`、`prominence`、`extra`
+
+**写信**（`POST /api/generate-email`）
+- `sender`: `name`、`raw_text`、`education`、`experiences`、`skills`、`projects`、`motivation`、`ask`
+- `receiver`: `name`、`raw_text`、`education`、`experiences`、`skills`、`projects`、`context`、`sources`
+- `goal`、`template`（可选）
+
+### B) 还没用到（目前不会影响输出，更多是为 benchmark/未来预留）
+
+**Benchmark 专用（当前 API 不消费）**
+- `benchmark_context.candidate_pool`（闭卷评测/稳定 expected 用）
+- `expected.*`（断言/参考稿/评分用，不参与生成）
+
+**找人阶段（目前不会被格式化进 prompt）**
+- `preferences.contact_channels`
+- `preferences.target_role_titles`
+- `preferences.bank_tier`
+- `preferences.group`、`preferences.group_type`
+- `preferences.sector`、`preferences.stage`
+- `preferences.recruiting_context`
+
+**写信阶段（当前 API 不消费结构化 spec）**
+- `generate_email_request.email_spec`
+- `sender/receiver.evidence_snippets`、`sender/receiver.links`（结构化字段当前不会进入 prompt）
+
+> 如果你现在就想“用起来”这些字段，最简单的兼容方式是把它们拼进现有已用字段：  
+> - 找人：把 `bank_tier/group/seniority/...` 合并进 `preferences.search_intent` 或 `preferences.extra`  
+> - 写信：把 `email_spec` 的 one-ask/长度/禁区/合规等合并进 `goal`（或写进模板）  

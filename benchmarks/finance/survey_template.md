@@ -48,12 +48,18 @@
    - 地区/语言/时区：
    - 你更希望通过什么渠道联系（email/LinkedIn/其他）：
 
+> 标注：现有 agent **直接会用到** `search_intent/must_have/must_not/location/contactability`（以及 `seniority/org_type/outreach_goal/prominence/extra`）。  
+> `bank_tier/group/target_role_titles/contact_channels/recruiting_context` 目前不会自动进 prompt，但依然建议收集：你可以把它们合并写进 `search_intent` 或 `extra` 来让现有 agent 立即用上。
+
 4.2) （可选）把 ask 写成结构化：
    - ask 类型（call / coffee chat / deck feedback / intro / other）：
    - 时长（分钟）：
    - 时间范围（例如 next week / next 2 weeks）：
    - 可选时间窗（例如 Tue 2-5pm ET）：
    - 异步替代方案（例如“我可以先发 3 个问题邮件请教”）：
+
+> 标注：现有 agent **直接会用到**的是你写进 `goal` 里的 ask/禁区/长度约束；结构化 `email_spec` 目前不会被 API 消费。  
+> 建议你在问卷里先收集结构化 ask，然后在转成 benchmark case 时把它拼进 `goal`。
 5) 你当时手头有哪些“可引用证据”？
    - 简历要点 / LinkedIn 摘录 / 官网团队页 / 文章链接 / 研报摘录 / 职位描述 / 其它
 6) 请粘贴 1–3 条“可公开引用”的证据摘录（每条 1–3 句）+ 来源链接（如果有）

@@ -16,18 +16,25 @@
 
 ## 2) 一条样本的最小组成
 
-你最终要产出一个 JSON 对象（参考 `benchmarks/finance/schema_v0.json`，v0.1），至少包含：
+你最终要产出一个 JSON 对象（参考 `benchmarks/finance/schema_v0.json`，v0.1），至少包含。
+
+> 重要：当前 Web App 的 API 并不会直接消费所有 v0.1 字段（例如 `email_spec`、`candidate_pool` 等）。  
+> 如果你要“拿真实样本直接跑现有接口”，请把这些结构化信息**合并进现有已使用字段**（见下方提示）。
 
 ### A. 找人输入（对应 `/api/find-recommendations`）
 - `purpose`：用户要做什么（coffee chat / job seeking / partnership / other）
 - `field`：Finance / Fintech 等
 - `sender_profile`：发送者背景（尽量结构化）
-- `preferences`：理想人群描述（search_intent）、must-have / must-not、地区语言、reply vs prestige 等
+- `preferences`：理想人群描述（search_intent）、must-have / must-not、地区语言、reply vs prestige 等（这些会进 prompt）
+
+（可选但建议收集）banker 维度如 `bank_tier/group/seniority/contact_channels/recruiting_context`：目前不会自动进 prompt，建议你把它们也写进 `search_intent` 或 `extra`，这样现有 agent 能用上。
 
 ### B. 写信输入（对应 `/api/generate-email`）
 - `sender`：发送者结构化画像（同上）
 - `receiver`：收件人画像（来自公开证据或用户提供材料）
 - `goal`：这封邮件要达成什么 + 约束（长度/语气/语言/禁区）
+
+（可选但建议收集）`email_spec`：目前 API 不消费这个结构化字段；如果要影响生成，请把 one-ask/长度/禁区/合规等要求写进 `goal`（或放到 `template` 里）。
 
 ### C. 预期输出（Expected）
 不要追求“逐字一致”，而是写“可验证的成功标准”：
