@@ -7,6 +7,12 @@
 
 Files: `benchmarks/finance/schema_v0.json`, `benchmarks/finance/finance_v0.json`, `benchmarks/finance/README.md`, `benchmarks/finance/anonymization_and_labeling_template.md`, `benchmarks/finance/rubric_v0.md`, `benchmarks/finance/survey_template.md`, `README.md`
 
+## 2025-12-21: Finance Survey v1 (Google Forms Ready)
+
+- Added a copy-paste-ready finance outreach survey for Google Forms/Typeform, designed to collect both benchmark-ready cases and marketing research signals without asking for sensitive information.
+
+Files: `benchmarks/finance/survey_v1_google_forms.md`, `benchmarks/finance/survey_template.md`, `benchmarks/finance/README.md`
+
 ## 2025-12-20: Finance Benchmark Starter Pack (v0)
 
 - Added a finance-focused benchmark starter kit: schema, 10 synthetic cases (format demo), rubric, anonymization/labeling template, and a marketing research + survey template.

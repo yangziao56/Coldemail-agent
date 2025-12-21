@@ -2,6 +2,8 @@
 
 这份文档的目标：用最小成本收集“真实用户输入 + 他们认为满意的输出标准”，并能直接转成 `benchmarks/finance/schema_v0.json`（v0.1）的 case。
 
+如果你想要“可直接发出去”的问卷版本（Google Forms/Typeform 题目与选项都写好），见：`benchmarks/finance/survey_v1_google_forms.md`。
+
 ## 0) 你要先定的 3 个研究目标（写进问卷开头）
 
 1) 用户在 finance 场景最常见的外联任务是什么？（找人/写信的组合）

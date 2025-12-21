@@ -12,6 +12,7 @@
 - `benchmarks/finance/rubric_v0.md`：人工评测 rubric（维度 + 失败标签）。
 - `benchmarks/finance/anonymization_and_labeling_template.md`：把真实用户输入转换成 benchmark case 的匿名化与标注模板。
 - `benchmarks/finance/survey_template.md`：marketing research / 问卷模板（把真实输入与“满意标准”采集成可直接转 case 的格式）。
+- `benchmarks/finance/survey_v1_google_forms.md`：可直接复制到 Google Forms/Typeform 的问卷版本（更具体的题目与选项）。
 
 ## 重要说明（请先读）
 
