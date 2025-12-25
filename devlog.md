@@ -8,6 +8,16 @@
 - Receiver enrichment: `POST /api/search-receiver` now returns `raw_text`, and `POST /api/generate-email` preserves receiver `sources` so the email prompt can cite verifiable info.
 - Updated `README.md` workflow diagram to show the time order of info collection and what each core API call can use.
 
+## 2025-12-20: UI/Flow Fixes & Crawler Integration
+
+- Fixed a regex parsing bug in `index_v2.html` that caused card selection to fail in the two-column selection UI.
+- Quick Start: restored/updated the back button behavior.
+- PDF upload: added failure handling/logging to surface errors instead of silent failures.
+- Professional flow: removed unused pre-steps to streamline the path.
+- Find Matches: integrated the crawler agent into the matching flow.
+
+Files: `templates/index_v2.html`, `src/agents/advisor_crawler.py`, `app.py`
+
 Files: `templates/index_v2.html`, `src/email_agent.py`, `app.py`, `README.md`
 
 ## 2025-12-13: UI Polish (Apple-like Visual Refresh)
