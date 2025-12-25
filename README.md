@@ -245,42 +245,6 @@ python -m src.cli \
 - **PDF Parsing**: PyPDF2
 - **Web Scraping**: BeautifulSoup4, Requests
 
-## Prompt Data Collection
-
-为了后续分析和模型改进，系统支持收集 `find_target` 和 `generate_email` 两个核心步骤的 prompt 与输出。
-
-### 数据格式
-
-每条记录包含：
-- `id`: 唯一标识符
-- `user_info`: 用户信息（purpose、field、sender_name）
-- `prompt_find_target`: 找人步骤的 prompt
-- `output_find_target`: 找人步骤的输出
-- `prompt_generate_email`: 生成邮件的 prompt
-- `output_generate_email`: 生成邮件的输出
-- `timestamp`: 时间戳
-
-### 配置
-
-- 环境变量 `COLLECT_PROMPTS=false` 可禁用数据收集（默认启用）
-- 数据存储于 `data/prompt_logs/{日期}/` 目录
-
-### 导出
-
-```python
-from src.services.prompt_collector import prompt_collector
-
-# 导出为 JSONL 格式
-prompt_collector.export_all_to_jsonl("output.jsonl")
-
-# 导出为 CSV 格式
-prompt_collector.export_all_to_csv("output.csv")
-```
-
-## Benchmark (Finance)
-
-Starter benchmark assets (schema v0.1 + 10 sample cases + rubric + survey template) live in `benchmarks/finance/`.
-
 ## License
 
 MIT

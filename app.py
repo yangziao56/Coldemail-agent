@@ -1,11 +1,13 @@
 """Flask web application for Cold Email Generator."""
 
 import os
+import json
 import tempfile
 from pathlib import Path
 from functools import wraps
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+import google.generativeai as genai
 
 from src.email_agent import (
     SenderProfile,
@@ -20,31 +22,8 @@ from src.email_agent import (
     regenerate_email_with_style,
 )
 from src.web_scraper import extract_person_profile_from_web
-
-# Prompt 数据收集
-try:
-    from src.services.prompt_collector import (
-        prompt_collector,
-        start_prompt_session,
-        end_prompt_session,
-    )
-    PROMPT_COLLECTOR_ENABLED = True
-except ImportError:
-    PROMPT_COLLECTOR_ENABLED = False
-    prompt_collector = None
-
-# 用户上传数据存储
-try:
-    from src.services.user_uploads import (
-        user_upload_storage,
-        save_user_resume,
-        save_user_targets,
-        add_user_target,
-    )
-    USER_UPLOAD_ENABLED = True
-except ImportError:
-    USER_UPLOAD_ENABLED = False
-    user_upload_storage = None
+from src.agents.advisor_crawler import crawl_bulk
+from config import DEFAULT_MODEL
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -76,19 +55,9 @@ def index():
     if not session.get('authenticated'):
         return redirect(url_for('login'))
     # Use v2 template by default
-    if APP_VERSION == 'v3':
-        return render_template('index_v3.html')
-    elif APP_VERSION == 'v2':
+    if APP_VERSION == 'v2':
         return render_template('index_v2.html')
     return render_template('index.html')
-
-
-@app.route('/v3')
-def index_v3():
-    """Render the v3 interface for testing."""
-    if not session.get('authenticated'):
-        return redirect(url_for('login'))
-    return render_template('index_v3.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -140,25 +109,19 @@ def upload_sender_pdf():
         return jsonify({'error': 'File must be a PDF'}), 400
     
     try:
-        # Get session ID
-        session_id = request.form.get('session_id', 'default')
-        original_filename = pdf_file.filename
-        
-        # 保存用户上传的原始 PDF 文件
-        if USER_UPLOAD_ENABLED and user_upload_storage:
-            # 先保存原始 PDF
-            user_upload_storage.save_resume_pdf(session_id, pdf_file, original_filename)
-            # 重置文件指针以便后续读取
-            pdf_file.seek(0)
-        
-        # Save to temp file and extract profile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
-            pdf_file.save(tmp.name)
-            profile = extract_profile_from_pdf(Path(tmp.name))
-            os.unlink(tmp.name)  # Clean up temp file
+        # Save to temp file and extract profile (ensure file handle is closed on Windows)
+        fd, tmp_path = tempfile.mkstemp(suffix='.pdf')
+        os.close(fd)
+        try:
+            pdf_file.save(tmp_path)
+            profile = extract_profile_from_pdf(Path(tmp_path))
+        finally:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)  # Clean up temp file
         
         # Cache the extracted profile
-        profile_dict = {
+        session_id = request.form.get('session_id', 'default')
+        sender_profile_cache[session_id] = {
             'name': profile.name,
             'raw_text': profile.raw_text,
             'education': profile.education,
@@ -166,15 +129,10 @@ def upload_sender_pdf():
             'skills': profile.skills,
             'projects': profile.projects,
         }
-        sender_profile_cache[session_id] = profile_dict
-        
-        # 保存解析后的简历数据
-        if USER_UPLOAD_ENABLED and user_upload_storage:
-            user_upload_storage.save_resume_profile(session_id, profile_dict)
         
         return jsonify({
             'success': True,
-            'profile': profile_dict
+            'profile': sender_profile_cache[session_id]
         })
     
     except Exception as e:
@@ -227,9 +185,6 @@ def api_generate_email():
     data = request.get_json()
     template = data.get('template') or None
     
-    # 获取数据收集 session_id（优先从请求获取，其次从 session）
-    session_id = data.get('session_id') or session.get('prompt_session_id')
-    
     try:
         # Get sender profile
         sender_data = data.get('sender', {})
@@ -263,18 +218,11 @@ def api_generate_email():
             return jsonify({'error': 'Goal is required'}), 400
         
         # Generate email (optionally template-guided)
-        email_text = generate_email(sender, receiver, goal, template=template, session_id=session_id)
-        
-        # 结束数据收集会话并保存
-        saved_path = None
-        if PROMPT_COLLECTOR_ENABLED and session_id:
-            saved_path = end_prompt_session(session_id)
-            session.pop('prompt_session_id', None)  # 清理 session
+        email_text = generate_email(sender, receiver, goal, template=template)
         
         return jsonify({
             'success': True,
-            'email': email_text,
-            'data_saved': saved_path is not None,
+            'email': email_text
         })
     
     except Exception as e:
@@ -401,29 +349,16 @@ def api_find_recommendations():
     if not purpose or not field:
         return jsonify({'error': 'Purpose and field are required'}), 400
     
-    # 开始数据收集会话
-    session_id = None
-    if PROMPT_COLLECTOR_ENABLED:
-        session_id = start_prompt_session(user_info={
-            "purpose": purpose,
-            "field": field,
-            "sender_name": sender_profile.get("name", ""),
-        })
-        # 存储 session_id 供后续 generate_email 使用
-        session['prompt_session_id'] = session_id
-    
     try:
         recommendations = find_target_recommendations(
             purpose,
             field,
             sender_profile,
-            preferences=preferences,
-            session_id=session_id,
+            preferences=preferences
         )
         return jsonify({
             'success': True,
-            'recommendations': recommendations,
-            'session_id': session_id,  # 返回给前端，供后续调用
+            'recommendations': recommendations
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -447,10 +382,14 @@ def upload_receiver_doc():
     try:
         if filename.endswith('.pdf'):
             # Save to temp file and extract profile using existing function
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
-                uploaded_file.save(tmp.name)
-                profile = extract_profile_from_pdf(Path(tmp.name))
-                os.unlink(tmp.name)
+            fd, tmp_path = tempfile.mkstemp(suffix='.pdf')
+            os.close(fd)
+            try:
+                uploaded_file.save(tmp_path)
+                profile = extract_profile_from_pdf(Path(tmp_path))
+            finally:
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
             
             return jsonify({
                 'success': True,
@@ -515,29 +454,114 @@ def api_regenerate_email():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/save-targets', methods=['POST'])
+@app.route('/api/recommend-institutions', methods=['POST'])
 @login_required
-def api_save_targets():
-    """Save user's selected targets for later analysis."""
-    if not USER_UPLOAD_ENABLED or not user_upload_storage:
-        return jsonify({'success': True, 'message': 'Upload storage disabled'})
-    
-    data = request.get_json()
-    
-    session_id = data.get('session_id', 'default')
-    targets = data.get('targets', [])
-    
-    if not targets:
-        return jsonify({'error': 'No targets provided'}), 400
-    
+def api_recommend_institutions():
+    """Use Gemini to recommend schools/colleges based on the user's profile."""
+    data = request.get_json() or {}
+    purpose = (data.get('purpose') or '').strip()
+    field = (data.get('field') or '').strip()
+    sender_profile = data.get('sender_profile') or {}
+
+    if not purpose or not field:
+        return jsonify({'error': 'Purpose and field are required'}), 400
+
     try:
-        path = save_user_targets(session_id, targets)
-        return jsonify({
-            'success': True,
-            'path': path,
-            'count': len(targets)
-        })
+        def _normalize_recs(obj):
+            # Expect list of dicts with school/college/reason; drop invalid rows
+            clean = []
+            if isinstance(obj, dict):
+                obj = obj.get('recommendations') or obj.get('data') or obj.get('items') or obj
+            if isinstance(obj, list):
+                for item in obj:
+                    if not isinstance(item, dict):
+                        continue
+                    school = (item.get('school') or '').strip()
+                    college = (item.get('college') or '').strip()
+                    reason = (item.get('reason') or '').strip()
+                    if school:
+                        clean.append({'school': school, 'college': college, 'reason': reason})
+            return clean
+
+        api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+        if not api_key:
+            return jsonify({'error': 'GEMINI_API_KEY/GOOGLE_API_KEY not configured'}), 500
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(DEFAULT_MODEL)
+
+        profile_snippet = sender_profile.get('raw_text') or ''
+        profile_snippet = profile_snippet[:1200]
+        prompt = f"""
+        You are an admissions/outreach strategist. Recommend universities/colleges (department or school)
+        that match the user's purpose and field for contacting advisors.
+        Strictly return JSON with key "recommendations" as a list of objects:
+        - school: string
+        - college: string (or empty)
+        - reason: short reason (<=200 chars), must mention why it fits the PURPOSE and FIELD.
+        Include 5-8 high-quality matches, ordered by fit.
+
+        PURPOSE (from step1): {purpose}
+        FIELD (from step1): {field}
+        Profile snippet (may be empty):
+        {profile_snippet}
+        """.strip()
+
+        resp = model.generate_content(prompt)
+        text = resp.text or ''
+
+        # Clean markdown fences and try JSON parse
+        cleaned = text
+        if cleaned.startswith('```'):
+            cleaned = cleaned.strip('`')
+            cleaned = cleaned.replace('json', '', 1).strip()
+        try:
+            parsed = json.loads(cleaned)
+            clean = _normalize_recs(parsed)
+        except Exception:
+            clean = []
+            # fallback: attempt to split lines like "school: X, college: Y, reason: Z"
+            for line in text.splitlines():
+                parts = [p.strip() for p in line.split(',') if p.strip()]
+                kv = {}
+                for part in parts:
+                    if ':' in part:
+                        k, v = part.split(':', 1)
+                        kv[k.strip().lower()] = v.strip().strip('"')
+                if kv.get('school'):
+                    clean.append({
+                        'school': kv.get('school', ''),
+                        'college': kv.get('college', ''),
+                        'reason': kv.get('reason', '')
+                    })
+
+        if not clean:
+            return jsonify({'error': 'No recommendations generated'}), 500
+
+        return jsonify({'success': True, 'recommendations': clean})
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/scrape-advisors', methods=['POST'])
+@login_required
+def api_scrape_advisors():
+    """Crawl advisor profiles for selected schools/colleges."""
+    data = request.get_json() or {}
+    institutions = data.get('institutions') or []
+    limit = data.get('limit')
+
+    if not isinstance(institutions, list) or not institutions:
+        return jsonify({'error': 'institutions list is required'}), 400
+
+    try:
+        print(f"[api] scrape-advisors start, institutions={institutions}", flush=True)
+        advisors = crawl_bulk(institutions, limit=limit)
+        print(f"[api] scrape-advisors done, found={len(advisors)}", flush=True)
+        if not advisors:
+            return jsonify({'error': 'No advisors found'}), 500
+        return jsonify({'success': True, 'advisors': advisors})
+    except Exception as e:
+        print(f"[api] scrape-advisors error: {e}", flush=True)
         return jsonify({'error': str(e)}), 500
 
 
