@@ -4,17 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cold Email Generator v3</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @font-face {
-            font-family: 'Brice Semi Expanded';
-            src: local('Brice Semi Expanded'), local('BriceSemiExpanded');
-            font-weight: 400;
-            font-style: normal;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -22,231 +12,149 @@
         }
 
         :root {
-            /* Dreamcore Sci-Fi Color Palette */
-            --bg: #0a0a0f;
-            --bg-secondary: #12121a;
-            --text: #e8e6f0;
-            --text-bright: #ffffff;
-            --muted: rgba(232, 230, 240, 0.65);
-            --muted-2: rgba(232, 230, 240, 0.45);
-            
-            /* Ethereal Accent Colors */
-            --accent: #8b5cf6;
-            --accent-hover: #a78bfa;
-            --accent-pressed: #7c3aed;
-            --accent-glow: rgba(139, 92, 246, 0.4);
-            
-            /* Dreamcore Secondary Colors */
-            --cyan: #22d3ee;
-            --cyan-glow: rgba(34, 211, 238, 0.3);
-            --magenta: #f472b6;
-            --magenta-glow: rgba(244, 114, 182, 0.3);
-            --emerald: #34d399;
-            --emerald-glow: rgba(52, 211, 153, 0.3);
-            
-            /* Glass Panel Effects */
-            --panel: rgba(20, 20, 30, 0.75);
-            --panel-strong: rgba(25, 25, 38, 0.88);
-            --panel-hover: rgba(30, 30, 45, 0.85);
-            --border: rgba(139, 92, 246, 0.2);
-            --border-soft: rgba(255, 255, 255, 0.08);
-            --border-glow: rgba(139, 92, 246, 0.5);
-            
-            /* Shadows & Effects */
-            --shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 60px rgba(139, 92, 246, 0.15);
-            --shadow-sm: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(139, 92, 246, 0.1);
-            --shadow-glow: 0 0 40px var(--accent-glow), 0 0 80px rgba(139, 92, 246, 0.2);
-            
-            /* Border Radius */
-            --radius-lg: 24px;
+            --bg: #f5f5f7;
+            --text: #1d1d1f;
+            --muted: rgba(29, 29, 31, 0.68);
+            --muted-2: rgba(29, 29, 31, 0.52);
+            --accent: #0071e3;
+            --accent-hover: #0077ed;
+            --accent-pressed: #0066cc;
+            --success: #34c759;
+            --border: rgba(0, 0, 0, 0.12);
+            --border-soft: rgba(0, 0, 0, 0.08);
+            --panel: rgba(255, 255, 255, 0.78);
+            --panel-strong: rgba(255, 255, 255, 0.9);
+            --shadow: 0 24px 70px rgba(0, 0, 0, 0.14);
+            --shadow-sm: 0 10px 28px rgba(0, 0, 0, 0.1);
+            --radius-lg: 22px;
             --radius-md: 16px;
             --radius-sm: 12px;
-            
-            /* Focus States */
-            --focus-ring: 0 0 0 3px rgba(139, 92, 246, 0.4), 0 0 20px rgba(139, 92, 246, 0.3);
-            
-            /* Success State */
-            --success: #34d399;
-            --success-glow: rgba(52, 211, 153, 0.4);
+            --focus-ring: 0 0 0 4px rgba(0, 113, 227, 0.22);
         }
 
         body {
-            font-family: 'Brice Semi Expanded', 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             color: var(--text);
+            background:
+                radial-gradient(1200px 700px at 12% 0%, rgba(0, 113, 227, 0.16), transparent 60%),
+                radial-gradient(900px 560px at 90% 18%, rgba(175, 82, 222, 0.16), transparent 55%),
+                radial-gradient(700px 520px at 20% 95%, rgba(88, 86, 214, 0.12), transparent 55%),
+                linear-gradient(180deg, var(--bg) 0%, #ffffff 60%, #ffffff 100%);
             min-height: 100vh;
             padding: 20px;
-            position: relative;
-            overflow-x: hidden;
-            
-            /* Dreamcore Background */
-            background: var(--bg);
-            background-image:
-                /* Floating orbs / bokeh effect */
-                radial-gradient(800px 600px at 20% 10%, rgba(139, 92, 246, 0.15), transparent 50%),
-                radial-gradient(600px 500px at 80% 20%, rgba(34, 211, 238, 0.12), transparent 50%),
-                radial-gradient(700px 600px at 60% 80%, rgba(244, 114, 182, 0.1), transparent 50%),
-                radial-gradient(500px 400px at 10% 90%, rgba(52, 211, 153, 0.08), transparent 50%),
-                /* Subtle grid pattern for depth */
-                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 60px 60px, 60px 60px;
-            background-attachment: fixed;
-        }
-
-        /* Animated background particles effect */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(2px 2px at 20% 30%, rgba(139, 92, 246, 0.4), transparent),
-                radial-gradient(2px 2px at 40% 70%, rgba(34, 211, 238, 0.3), transparent),
-                radial-gradient(2px 2px at 60% 20%, rgba(244, 114, 182, 0.3), transparent),
-                radial-gradient(2px 2px at 80% 60%, rgba(52, 211, 153, 0.3), transparent),
-                radial-gradient(1px 1px at 30% 50%, rgba(255, 255, 255, 0.2), transparent),
-                radial-gradient(1px 1px at 70% 40%, rgba(255, 255, 255, 0.15), transparent);
-            background-size: 350px 350px, 400px 400px, 300px 300px, 450px 450px, 200px 200px, 250px 250px;
-            animation: floatParticles 30s ease-in-out infinite;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        @keyframes floatParticles {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
-            25% { transform: translate(10px, -20px) rotate(2deg); opacity: 0.8; }
-            50% { transform: translate(-5px, 10px) rotate(-1deg); opacity: 0.7; }
-            75% { transform: translate(15px, 5px) rotate(1deg); opacity: 0.9; }
         }
 
         .container {
-            max-width: 920px;
+            max-width: 900px;
             margin: 0 auto;
-            position: relative;
-            z-index: 1;
         }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 35px;
+            margin-bottom: 30px;
         }
 
         .header h1 {
-            color: var(--text-bright);
+            color: var(--text);
             font-size: 2em;
             letter-spacing: -0.02em;
-            font-weight: 600;
-            text-shadow: 0 0 40px var(--accent-glow);
         }
 
-        /* Floating LCD Panel - Mode Switcher */
         .mode-switcher {
             position: fixed;
-            top: 18px;
-            right: 18px;
+            top: 16px;
+            right: 16px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
+            gap: 8px;
+            padding: 8px 10px;
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-soft);
             border-radius: 999px;
-            backdrop-filter: blur(25px) saturate(180%);
-            box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow-sm);
             z-index: 900;
         }
 
         .mode-switcher-label {
             color: var(--muted);
-            font-weight: 600;
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 0.02em;
         }
 
         .mode-pill {
             border: 1px solid var(--border-soft);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--muted);
-            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.55);
+            color: var(--text);
+            padding: 6px 10px;
             border-radius: 999px;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 12px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-family: inherit;
-        }
-
-        .mode-pill:hover {
-            background: rgba(139, 92, 246, 0.15);
-            border-color: var(--border);
-            color: var(--text);
-            transform: translateY(-1px);
         }
 
         .mode-pill.active {
-            background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+            background: var(--accent);
             color: #fff;
-            border-color: transparent;
-            box-shadow: 0 8px 25px var(--accent-glow), 0 0 20px var(--accent-glow);
+            border-color: rgba(0, 113, 227, 0.35);
+            box-shadow: 0 10px 22px rgba(0, 113, 227, 0.22);
+        }
+
+        .mode-pill:hover {
+            transform: translateY(-1px);
         }
 
         .version-badge {
-            background: rgba(139, 92, 246, 0.15);
-            color: var(--accent-hover);
-            padding: 5px 14px;
+            background: rgba(0, 0, 0, 0.06);
+            color: var(--muted);
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 11px;
-            margin-left: 12px;
-            border: 1px solid var(--border);
-            letter-spacing: 0.05em;
+            font-size: 12px;
+            margin-left: 10px;
         }
 
         .btn-logout {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--muted);
-            padding: 10px 22px;
+            background: rgba(255, 255, 255, 0.65);
+            color: var(--text);
+            padding: 10px 20px;
             border: 1px solid var(--border-soft);
             border-radius: 999px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             transition: all 0.3s;
             text-decoration: none;
-            font-family: inherit;
         }
 
         .btn-logout:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--border);
-            color: var(--text);
+            background: rgba(255, 255, 255, 0.85);
             box-shadow: var(--shadow-sm);
         }
 
-        /* Progress Steps - Holographic Bar */
+        /* Progress Steps */
         .progress-container {
             display: flex;
             justify-content: center;
-            margin-bottom: 35px;
+            margin-bottom: 30px;
         }
 
         .progress-steps {
             display: flex;
             align-items: center;
             background: var(--panel);
-            border: 1px solid var(--border);
-            backdrop-filter: blur(25px) saturate(180%);
-            box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            padding: 16px 35px;
+            border: 1px solid var(--border-soft);
+            backdrop-filter: blur(18px);
+            box-shadow: var(--shadow-sm);
+            padding: 15px 30px;
             border-radius: 50px;
         }
 
@@ -255,211 +163,155 @@
             align-items: center;
             color: var(--muted-2);
             font-weight: 600;
-            font-size: 13px;
-            transition: all 0.3s;
+            font-size: 14px;
         }
 
         .step.active {
-            color: var(--text-bright);
+            color: var(--text);
         }
 
         .step.completed {
-            color: var(--emerald);
+            color: rgba(52, 199, 89, 0.9);
         }
 
         .step-number {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.8);
             border: 1px solid var(--border-soft);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 10px;
-            font-size: 13px;
-            transition: all 0.3s;
+            margin-right: 8px;
+            font-size: 14px;
         }
 
         .step.active .step-number {
-            background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
-            border-color: transparent;
-            color: white;
-            box-shadow: 0 0 20px var(--accent-glow);
+            background: rgba(0, 113, 227, 0.12);
+            border-color: rgba(0, 113, 227, 0.25);
+            color: var(--accent);
         }
 
         .step.completed .step-number {
-            background: linear-gradient(135deg, var(--emerald) 0%, #4ade80 100%);
-            border-color: transparent;
-            color: white;
-            box-shadow: 0 0 20px var(--emerald-glow);
+            background: rgba(52, 199, 89, 0.16);
+            border-color: rgba(52, 199, 89, 0.25);
+            color: var(--success);
         }
 
         .step-connector {
-            width: 45px;
+            width: 40px;
             height: 2px;
-            background: linear-gradient(90deg, var(--border-soft), var(--border));
-            margin: 0 16px;
-            border-radius: 2px;
+            background: rgba(0, 0, 0, 0.12);
+            margin: 0 15px;
         }
 
         .step-connector.completed {
-            background: linear-gradient(90deg, var(--emerald), var(--cyan));
-            box-shadow: 0 0 10px var(--emerald-glow);
+            background: rgba(52, 199, 89, 0.65);
         }
 
-        /* Floating LCD Panels */
+        /* Panel Styles */
         .panel {
             background: var(--panel);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-soft);
             border-radius: var(--radius-lg);
-            backdrop-filter: blur(25px) saturate(180%);
-            padding: 32px;
-            box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Subtle animated gradient border effect */
-        .panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--accent), var(--cyan), var(--magenta), transparent);
-            opacity: 0.5;
+            backdrop-filter: blur(18px);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
         }
 
         .panel h2 {
-            color: var(--text-bright);
+            color: var(--text);
             margin-bottom: 25px;
-            padding-bottom: 16px;
+            padding-bottom: 15px;
             border-bottom: 1px solid var(--border-soft);
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-weight: 600;
+            gap: 10px;
         }
 
         .panel h2 .icon {
-            font-size: 1.4em;
-            filter: drop-shadow(0 0 8px var(--accent-glow));
+            font-size: 1.5em;
         }
 
         .panel-description {
             color: var(--muted);
             margin-bottom: 25px;
-            line-height: 1.7;
+            line-height: 1.6;
         }
 
-        /* Form Styles - Soft Glow Inputs */
+        /* Form Styles */
         .form-group {
-            margin-bottom: 22px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-weight: 600;
             color: var(--muted);
-            font-size: 13px;
-            letter-spacing: 0.02em;
         }
 
         .form-group input,
         .form-group textarea,
         .form-group select {
             width: 100%;
-            padding: 14px 18px;
+            padding: 12px 15px;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.85);
             font-size: 14px;
-            color: var(--text);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
-        }
-
-        .form-group input::placeholder,
-        .form-group textarea::placeholder {
-            color: var(--muted-2);
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
         }
 
         .form-group input:focus,
         .form-group textarea:focus,
         .form-group select:focus {
             outline: none;
-            border-color: var(--accent);
+            border-color: rgba(0, 113, 227, 0.6);
             box-shadow: var(--focus-ring);
-            background: rgba(139, 92, 246, 0.05);
+            background: rgba(255, 255, 255, 0.95);
         }
 
-        /* Option Cards - Holographic Selection */
+        /* Option Cards */
         .option-cards {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 22px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
         .option-card {
-            padding: 22px;
+            padding: 20px;
             border: 1px solid var(--border);
-            border-radius: var(--radius-md);
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s;
             text-align: center;
-            background: rgba(255, 255, 255, 0.02);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .option-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, transparent 40%, rgba(139, 92, 246, 0.1) 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
+            background: rgba(255, 255, 255, 0.6);
         }
 
         .option-card:hover {
-            border-color: var(--border-glow);
-            background: rgba(139, 92, 246, 0.08);
+            border-color: rgba(0, 113, 227, 0.45);
+            background: rgba(255, 255, 255, 0.85);
             box-shadow: var(--shadow-sm);
-            transform: translateY(-2px);
-        }
-
-        .option-card:hover::before {
-            opacity: 1;
         }
 
         .option-card.selected {
-            border-color: var(--accent);
-            background: rgba(139, 92, 246, 0.12);
-            box-shadow: 0 0 30px var(--accent-glow);
-        }
-
-        .option-card.selected::before {
-            opacity: 1;
+            border-color: rgba(0, 113, 227, 0.55);
+            background: rgba(0, 113, 227, 0.08);
         }
 
         .option-card .icon {
-            font-size: 2.2em;
-            margin-bottom: 12px;
-            filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
+            font-size: 2em;
+            margin-bottom: 10px;
         }
 
         .option-card .title {
             font-weight: 600;
-            color: var(--text-bright);
-            margin-bottom: 6px;
+            color: var(--text);
+            margin-bottom: 5px;
         }
 
         .option-card .desc {
@@ -469,7 +321,7 @@
 
         /* Custom Input for "Other" option */
         .custom-input {
-            margin-top: 16px;
+            margin-top: 15px;
             display: none;
         }
 
@@ -480,58 +332,53 @@
         .custom-input textarea {
             width: 100%;
             min-height: 120px;
-            padding: 14px 16px;
+            padding: 12px 14px;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.85);
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.5;
             resize: vertical;
-            color: var(--text);
-            transition: all 0.3s;
-            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
         }
 
         .custom-input textarea:focus {
             outline: none;
-            border-color: var(--accent);
+            border-color: rgba(0, 113, 227, 0.6);
             box-shadow: var(--focus-ring);
-            background: rgba(139, 92, 246, 0.05);
+            background: rgba(255, 255, 255, 0.95);
         }
 
-        /* Yes/No Choice - Soft Glow Buttons */
+        /* Yes/No Choice */
         .choice-buttons {
             display: flex;
-            gap: 16px;
-            margin-bottom: 22px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
         .choice-btn {
             flex: 1;
-            padding: 16px 28px;
+            padding: 15px 25px;
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.75);
             cursor: pointer;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
-            color: var(--muted);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
+            transition: all 0.3s;
         }
 
         .choice-btn:hover {
-            border-color: var(--border-glow);
-            background: rgba(139, 92, 246, 0.08);
-            color: var(--text);
+            border-color: rgba(0, 113, 227, 0.45);
+            background: rgba(255, 255, 255, 0.95);
             box-shadow: var(--shadow-sm);
         }
 
         .choice-btn.selected {
-            border-color: var(--accent);
-            background: rgba(139, 92, 246, 0.15);
-            color: var(--text-bright);
-            box-shadow: 0 0 25px var(--accent-glow);
+            border-color: rgba(0, 113, 227, 0.55);
+            background: rgba(0, 113, 227, 0.12);
+            color: var(--text);
+            box-shadow: var(--shadow-sm);
         }
 
         .choice-btn:focus {
@@ -539,7 +386,12 @@
             box-shadow: var(--focus-ring);
         }
 
-        /* Questionnaire - Dynamic Cards */
+        .choice-btn.selected:focus {
+            box-shadow: var(--focus-ring), var(--shadow-sm);
+            color: var(--text);
+        }
+
+        /* Questionnaire */
         .questionnaire {
             display: none;
         }
@@ -549,19 +401,18 @@
         }
 
         .question-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid var(--border-soft);
             border-radius: var(--radius-md);
-            padding: 22px;
+            padding: 20px;
             margin-bottom: 20px;
             box-shadow: var(--shadow-sm);
         }
 
         .question-card h4 {
-            color: var(--text-bright);
-            margin-bottom: 16px;
-            font-size: 15px;
-            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 15px;
+            font-size: 16px;
         }
 
         .question-options {
@@ -571,31 +422,27 @@
         }
 
         .question-option {
-            padding: 14px 18px;
+            padding: 12px 15px;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             cursor: pointer;
             transition: all 0.3s;
-            background: rgba(255, 255, 255, 0.02);
-            color: var(--muted);
+            background: rgba(255, 255, 255, 0.85);
         }
 
         .question-option:hover {
-            border-color: var(--border-glow);
-            background: rgba(139, 92, 246, 0.08);
-            color: var(--text);
+            border-color: rgba(0, 113, 227, 0.45);
             box-shadow: var(--shadow-sm);
         }
 
         .question-option.selected {
-            border-color: var(--accent);
-            background: rgba(139, 92, 246, 0.12);
-            color: var(--text-bright);
-            box-shadow: 0 0 20px var(--accent-glow);
+            border-color: rgba(0, 113, 227, 0.55);
+            background: rgba(0, 113, 227, 0.12);
+            color: var(--text);
         }
 
         .question-custom-input {
-            margin-top: 12px;
+            margin-top: 10px;
             display: none;
         }
 
@@ -605,81 +452,75 @@
 
         .question-custom-input textarea {
             width: 100%;
-            padding: 14px 16px;
+            padding: 12px 15px;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.85);
             font-size: 14px;
-            color: var(--text);
-            transition: all 0.3s;
+            transition: border-color 0.3s;
             resize: vertical;
-            font-family: inherit;
         }
 
         .question-custom-input textarea:focus {
             outline: none;
-            border-color: var(--accent);
+            border-color: rgba(0, 113, 227, 0.6);
             box-shadow: var(--focus-ring);
+            background: rgba(255, 255, 255, 0.95);
         }
 
-        /* Recommendation List - Floating Cards */
+        /* Recommendation List */
         .recommendation-list {
-            margin-top: 22px;
+            margin-top: 20px;
         }
 
         .recommendation-item {
             display: flex;
             align-items: center;
-            padding: 18px;
+            padding: 15px;
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(255, 255, 255, 0.02);
-            position: relative;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.6);
         }
 
         .recommendation-item:hover {
-            border-color: var(--border-glow);
-            background: rgba(139, 92, 246, 0.08);
+            border-color: rgba(0, 113, 227, 0.45);
+            background: rgba(255, 255, 255, 0.85);
             box-shadow: var(--shadow-sm);
-            transform: translateX(4px);
         }
 
         .recommendation-item.selected {
-            border-color: var(--accent);
-            background: rgba(139, 92, 246, 0.12);
-            box-shadow: 0 0 25px var(--accent-glow);
+            border-color: rgba(0, 113, 227, 0.55);
+            background: rgba(0, 113, 227, 0.08);
         }
 
         .rec-checkbox {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            margin-right: 14px;
+            border-radius: 6px;
+            margin-right: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s;
             flex-shrink: 0;
-            background: rgba(255, 255, 255, 0.03);
-            color: transparent;
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .recommendation-item.selected .rec-checkbox {
-            background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
-            border-color: transparent;
+            background: var(--accent);
+            border-color: rgba(0, 113, 227, 0.55);
             color: white;
-            box-shadow: 0 0 15px var(--accent-glow);
         }
 
         .selected-targets {
-            margin-top: 22px;
-            padding: 18px;
-            background: rgba(139, 92, 246, 0.08);
-            border: 1px solid var(--border);
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 113, 227, 0.08);
+            border: 1px solid rgba(0, 113, 227, 0.18);
             border-radius: var(--radius-md);
             display: none;
         }
@@ -689,35 +530,32 @@
         }
 
         .selected-targets h4 {
-            color: var(--accent-hover);
-            margin-bottom: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.02em;
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-size: 14px;
         }
 
         .selected-target-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
 
         .target-tag {
-            background: rgba(139, 92, 246, 0.15);
-            border: 1px solid var(--border);
-            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 113, 227, 0.24);
+            padding: 6px 12px;
             border-radius: 20px;
             font-size: 13px;
-            color: var(--accent-hover);
+            color: var(--accent);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .target-tag .remove {
             cursor: pointer;
             opacity: 0.6;
-            transition: opacity 0.2s;
         }
 
         .target-tag .remove:hover {
@@ -725,18 +563,17 @@
         }
 
         .rec-avatar {
-            width: 52px;
-            height: 52px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--cyan) 50%, var(--magenta) 100%);
+            background: linear-gradient(135deg, rgba(0, 113, 227, 0.95) 0%, rgba(88, 86, 214, 0.95) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-weight: 700;
+            font-weight: bold;
             font-size: 18px;
-            margin-right: 16px;
-            box-shadow: 0 0 20px var(--accent-glow);
+            margin-right: 15px;
         }
 
         .rec-info {
@@ -745,8 +582,8 @@
 
         .rec-name {
             font-weight: 600;
-            color: var(--text-bright);
-            margin-bottom: 4px;
+            color: var(--text);
+            margin-bottom: 3px;
         }
 
         .rec-field {
@@ -755,38 +592,35 @@
         }
 
         .rec-match {
-            padding: 6px 14px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
         }
 
         .rec-match.high {
-            background: rgba(52, 211, 153, 0.15);
-            color: var(--emerald);
-            border: 1px solid rgba(52, 211, 153, 0.3);
+            background: #d4edda;
+            color: #155724;
         }
 
         .rec-match.medium {
-            background: rgba(251, 191, 36, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(251, 191, 36, 0.3);
+            background: #fff3cd;
+            color: #856404;
         }
 
         .rec-match.low {
-            background: rgba(244, 114, 182, 0.15);
-            color: var(--magenta);
-            border: 1px solid rgba(244, 114, 182, 0.3);
+            background: #f8d7da;
+            color: #721c24;
         }
 
-        /* Match Details Modal - Floating Panel */
+        /* Match Details Modal */
         .match-details {
             display: none;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid var(--border-soft);
             border-radius: var(--radius-md);
-            padding: 22px;
-            margin-top: 16px;
+            padding: 20px;
+            margin-top: 15px;
             box-shadow: var(--shadow-sm);
         }
 
@@ -795,116 +629,96 @@
         }
 
         .match-section {
-            margin-bottom: 16px;
+            margin-bottom: 15px;
         }
 
         .match-section h5 {
-            color: var(--accent-hover);
-            margin-bottom: 10px;
-            font-size: 13px;
-            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 8px;
+            font-size: 14px;
         }
 
         .match-section p {
             color: var(--muted);
             font-size: 14px;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
-        /* Buttons - Holographic Glow Effect */
+        /* Buttons */
         .btn {
-            padding: 14px 30px;
+            padding: 14px 28px;
             border: none;
             border-radius: 999px;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
-            position: relative;
-            overflow: hidden;
+            transition: all 0.3s;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+            background: var(--accent);
             color: white;
-            box-shadow: 0 8px 25px var(--accent-glow);
-        }
-
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn-primary:hover::before {
-            left: 100%;
         }
 
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px var(--accent-glow), 0 0 30px var(--accent-glow);
+            transform: translateY(-2px);
+            background: var(--accent-hover);
+            box-shadow: 0 16px 34px rgba(0, 113, 227, 0.22);
         }
 
         .btn-primary:active {
             transform: translateY(-1px);
+            background: var(--accent-pressed);
         }
 
         .btn-primary:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
             transform: none;
-            box-shadow: none;
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.75);
             color: var(--text);
             border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--border-glow);
+            background: rgba(255, 255, 255, 0.95);
             box-shadow: var(--shadow-sm);
         }
 
         .btn-group {
             display: flex;
-            gap: 16px;
-            margin-top: 28px;
+            gap: 15px;
+            margin-top: 25px;
         }
 
         .btn-icon {
-            padding: 10px 16px;
-            font-size: 13px;
+            padding: 10px 15px;
+            font-size: 14px;
         }
 
-        /* Email Output - LCD Display */
+        /* Email Output */
         .email-output {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: var(--radius-md);
-            padding: 28px;
-            margin-top: 22px;
-            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            color: var(--text);
+            border: 1px solid var(--border-soft);
         }
 
         .email-editor-field {
             position: relative;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
 
         .email-editor-label {
             display: block;
-            font-weight: 600;
-            color: var(--text-bright);
-            margin-bottom: 10px;
-            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
         }
 
         .email-editor-input,
@@ -912,64 +726,63 @@
             width: 100%;
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            padding: 14px 48px 14px 16px;
+            padding: 14px 44px 14px 14px;
             font-size: 14px;
-            font-family: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            line-height: 1.7;
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.03);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            line-height: 1.6;
+            color: #222;
+            background: rgba(255, 255, 255, 0.9);
             transition: all 0.3s;
         }
 
         .email-editor-textarea {
-            min-height: 300px;
+            min-height: 280px;
             resize: vertical;
         }
 
         .email-editor-input:focus,
         .email-editor-textarea:focus {
             outline: none;
-            border-color: var(--accent);
+            border-color: rgba(0, 113, 227, 0.6);
             box-shadow: var(--focus-ring);
         }
 
         .email-copy-inline {
             position: absolute;
-            top: 40px;
-            right: 12px;
-            height: 32px;
-            padding: 0 12px;
+            top: 38px;
+            right: 10px;
+            height: 30px;
+            padding: 0 10px;
             border-radius: 8px;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--muted);
-            font-size: 11px;
-            font-weight: 600;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
-            font-family: inherit;
+            transition: all 0.2s ease;
         }
 
         .email-copy-inline:hover {
-            background: rgba(139, 92, 246, 0.15);
-            border-color: var(--accent);
-            color: var(--accent-hover);
+            background: #fff;
+            border-color: rgba(0, 113, 227, 0.45);
+            color: var(--accent);
         }
 
         .email-copy-inline.copied {
-            border-color: var(--emerald);
-            color: var(--emerald);
-            background: rgba(52, 211, 153, 0.1);
+            border-color: rgba(40, 167, 69, 0.5);
+            color: #28a745;
         }
 
-        /* Regenerate Options - Control Panel */
+        /* Regenerate Options */
         .regenerate-options {
             display: none;
-            margin-top: 22px;
-            padding: 22px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--border-soft);
             border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
         }
 
         .regenerate-options.visible {
@@ -977,16 +790,15 @@
         }
 
         .regenerate-options h4 {
-            color: var(--text-bright);
-            margin-bottom: 16px;
-            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 15px;
         }
 
         .style-options {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         .style-option {
@@ -995,30 +807,27 @@
             border-radius: 25px;
             cursor: pointer;
             transition: all 0.3s;
-            font-size: 13px;
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--muted);
-            font-family: inherit;
-        }
-
-        .style-option:hover {
-            border-color: var(--border-glow);
-            background: rgba(139, 92, 246, 0.08);
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.75);
             color: var(--text);
         }
 
-        .style-option.selected {
-            border-color: var(--accent);
-            background: rgba(139, 92, 246, 0.15);
-            color: var(--accent-hover);
-            box-shadow: 0 0 15px var(--accent-glow);
+        .style-option:hover {
+            border-color: rgba(0, 113, 227, 0.45);
+            box-shadow: var(--shadow-sm);
         }
 
-        /* Loading State - Ethereal Spinner */
+        .style-option.selected {
+            border-color: rgba(0, 113, 227, 0.55);
+            background: rgba(0, 113, 227, 0.12);
+            color: var(--text);
+        }
+
+        /* Loading State */
         .loading {
             display: none;
             text-align: center;
-            padding: 50px;
+            padding: 40px;
         }
 
         .loading.visible {
@@ -1026,15 +835,13 @@
         }
 
         .spinner {
-            width: 55px;
-            height: 55px;
-            border: 3px solid var(--border);
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
             border-top-color: var(--accent);
-            border-right-color: var(--cyan);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 22px;
-            box-shadow: 0 0 20px var(--accent-glow);
+            margin: 0 auto 20px;
         }
 
         @keyframes spin {
@@ -1043,22 +850,22 @@
 
         .loading-text {
             color: var(--muted);
-            font-size: 15px;
+            font-size: 16px;
         }
 
-        /* Notice Box - Alert Panel */
+        /* Notice Box */
         .notice {
-            background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.3);
-            border-radius: var(--radius-sm);
-            padding: 14px 18px;
-            margin-bottom: 22px;
-            color: #fbbf24;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            color: #856404;
             font-size: 14px;
         }
 
         .notice .icon {
-            margin-right: 10px;
+            margin-right: 8px;
         }
 
         /* Hidden by default */
@@ -1066,7 +873,7 @@
             display: none !important;
         }
 
-        /* Modal - Floating LCD Display */
+        /* Modal styles for target profile */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -1074,8 +881,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.5);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -1086,42 +892,41 @@
         }
 
         .onboarding-list {
-            margin: 14px 0 0;
-            padding-left: 20px;
+            margin: 12px 0 0;
+            padding-left: 18px;
             color: var(--muted);
-            line-height: 1.7;
+            line-height: 1.6;
         }
 
         .onboarding-list li {
-            margin: 10px 0;
+            margin: 8px 0;
         }
 
         .modal-content {
             background: var(--panel-strong);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-soft);
             border-radius: var(--radius-lg);
-            padding: 32px;
-            max-width: 620px;
+            padding: 30px;
+            max-width: 600px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
-            backdrop-filter: blur(30px) saturate(180%);
-            box-shadow: var(--shadow), 0 0 60px var(--accent-glow);
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow);
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 22px;
-            padding-bottom: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
             border-bottom: 1px solid var(--border-soft);
         }
 
         .modal-header h3 {
-            color: var(--text-bright);
+            color: var(--text);
             font-size: 1.3em;
-            font-weight: 600;
         }
 
         .modal-close {
@@ -1129,27 +934,25 @@
             border: none;
             font-size: 24px;
             cursor: pointer;
-            color: var(--muted);
-            transition: all 0.3s;
+            color: rgba(29, 29, 31, 0.45);
+            transition: color 0.3s;
         }
 
         .modal-close:hover {
-            color: var(--text-bright);
-            transform: rotate(90deg);
+            color: var(--text);
         }
 
         .profile-section {
-            margin-bottom: 22px;
+            margin-bottom: 20px;
         }
 
         .profile-section h4 {
-            color: var(--accent-hover);
-            font-size: 13px;
-            margin-bottom: 10px;
+            color: var(--accent);
+            font-size: 14px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
-            font-weight: 600;
         }
 
         .profile-section ul {
@@ -1158,11 +961,11 @@
         }
 
         .profile-section li {
-            padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border-soft);
             border-radius: 10px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-size: 14px;
             color: var(--muted);
         }
@@ -1170,49 +973,45 @@
         .profile-section p {
             font-size: 14px;
             color: var(--muted);
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
         .view-profile-btn {
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid var(--border);
-            color: var(--accent-hover);
+            background: none;
+            border: none;
+            color: var(--accent);
             font-size: 12px;
             cursor: pointer;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: all 0.3s;
-            font-family: inherit;
-            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.3s;
         }
 
         .view-profile-btn:hover {
-            background: rgba(139, 92, 246, 0.2);
-            border-color: var(--accent);
-            box-shadow: 0 0 15px var(--accent-glow);
+            background: rgba(0, 113, 227, 0.1);
         }
 
-        /* Mode Selection - Holographic Cards */
+        /* Mode Selection Styles */
         .mode-selection-container {
             display: flex;
             justify-content: center;
-            gap: 32px;
-            margin-top: 24px;
+            gap: 30px;
+            margin-top: 20px;
         }
 
         .mode-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 45px 35px;
-            width: 350px;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid var(--border-soft);
+            border-radius: 20px;
+            padding: 40px 30px;
+            width: 340px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(25px) saturate(180%);
+            backdrop-filter: blur(18px);
         }
 
         .mode-card::before {
@@ -1221,39 +1020,24 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent), var(--cyan), var(--magenta));
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .mode-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.1), transparent 60%);
+            height: 5px;
+            background: linear-gradient(135deg, rgba(0, 113, 227, 0.95) 0%, rgba(88, 86, 214, 0.95) 100%);
             opacity: 0;
             transition: opacity 0.3s;
         }
 
         .mode-card:hover {
-            transform: translateY(-10px);
-            box-shadow: var(--shadow), 0 0 40px var(--accent-glow);
-            border-color: var(--border-glow);
+            transform: translateY(-8px);
+            box-shadow: var(--shadow);
         }
 
-        .mode-card:hover::before,
-        .mode-card:hover::after {
+        .mode-card:hover::before {
             opacity: 1;
         }
 
         .mode-card.selected {
-            border-color: var(--accent);
-            background: rgba(139, 92, 246, 0.1);
-            box-shadow: var(--shadow), 0 0 50px var(--accent-glow);
+            border-color: rgba(0, 113, 227, 0.35);
+            background: rgba(0, 113, 227, 0.08);
         }
 
         .mode-card.selected::before {
@@ -1262,89 +1046,84 @@
 
         .mode-card .mode-icon {
             font-size: 4em;
-            margin-bottom: 22px;
-            filter: drop-shadow(0 0 20px var(--accent-glow));
+            margin-bottom: 20px;
         }
 
         .mode-card .mode-title {
             font-size: 1.5em;
             font-weight: 700;
-            color: var(--text-bright);
-            margin-bottom: 16px;
+            color: var(--text);
+            margin-bottom: 15px;
         }
 
         .mode-card .mode-subtitle {
             font-size: 0.95em;
             color: var(--muted);
-            margin-bottom: 22px;
-            line-height: 1.6;
+            margin-bottom: 20px;
+            line-height: 1.5;
         }
 
         .mode-card .mode-features {
             text-align: left;
-            margin: 22px 0;
+            margin: 20px 0;
             padding: 0;
             list-style: none;
         }
 
         .mode-card .mode-features li {
-            padding: 10px 0;
+            padding: 8px 0;
             font-size: 14px;
             color: var(--muted);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .mode-card .mode-features li::before {
             content: '✓';
-            color: var(--emerald);
+            color: var(--accent);
             font-weight: bold;
-            filter: drop-shadow(0 0 5px var(--emerald-glow));
         }
 
         .mode-card .mode-badge {
             display: inline-block;
-            padding: 8px 18px;
+            padding: 6px 16px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
-            margin-top: 12px;
+            margin-top: 10px;
         }
 
         .mode-card.quick .mode-badge {
-            background: rgba(52, 211, 153, 0.15);
-            color: var(--emerald);
-            border: 1px solid rgba(52, 211, 153, 0.3);
+            background: #e8f5e9;
+            color: #2e7d32;
         }
 
         .mode-card.pro .mode-badge {
-            background: rgba(251, 191, 36, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(251, 191, 36, 0.3);
+            background: #fff3e0;
+            color: #e65100;
         }
 
         .mode-card.pro .mode-coming-soon {
             position: absolute;
-            top: 18px;
-            right: -28px;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            top: 15px;
+            right: -30px;
+            background: #ff9800;
             color: white;
-            padding: 6px 40px;
-            font-size: 10px;
-            font-weight: 700;
+            padding: 5px 40px;
+            font-size: 11px;
+            font-weight: 600;
             transform: rotate(45deg);
-            letter-spacing: 0.05em;
         }
 
         .mode-card.pro.disabled {
-            opacity: 0.6;
+            opacity: 0.7;
             cursor: not-allowed;
         }
 
         .mode-card.pro.disabled:hover {
             transform: none;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
 
         /* Responsive */
@@ -1521,17 +1300,17 @@
             <h2><span class="icon">📄</span> Upload Your Resume</h2>
             <p class="panel-description">Upload your resume or CV so we can analyze your background and find the best matches.</p>
             
-            <div class="notice" style="background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.4); color: #c4b5fd;">
+            <div class="notice" style="background: #e3f2fd; border-color: #2196f3; color: #1565c0;">
                 <span class="icon">💼</span>
                 <strong>Professional Mode:</strong> Your resume helps us find highly targeted recommendations in the <span id="selected-track-display">your field</span> sector.
             </div>
             
             <div class="form-group">
                 <label>Upload your resume (PDF)</label>
-                <div style="border: 1px dashed rgba(139, 92, 246, 0.4); border-radius: 16px; padding: 40px; text-align: center; background: rgba(139, 92, 246, 0.08); cursor: pointer; backdrop-filter: blur(18px);" id="pro-resume-dropzone">
+                <div style="border: 1px dashed rgba(0,0,0,0.25); border-radius: 16px; padding: 40px; text-align: center; background: rgba(255,255,255,0.6); cursor: pointer; backdrop-filter: blur(18px);" id="pro-resume-dropzone">
                     <div style="font-size: 3em; margin-bottom: 15px;">📎</div>
-                    <div style="font-size: 16px; color: #e0e0e8; margin-bottom: 10px;">Drag & drop your resume here</div>
-                    <div style="font-size: 14px; color: #a0a0b0;">or click to browse (PDF only)</div>
+                    <div style="font-size: 16px; color: #333; margin-bottom: 10px;">Drag & drop your resume here</div>
+                    <div style="font-size: 14px; color: #666;">or click to browse (PDF only)</div>
                     <input type="file" id="pro-resume-file" accept=".pdf" style="display: none;">
                 </div>
             </div>
@@ -1542,10 +1321,10 @@
             </div>
             
             <div class="hidden" id="pro-resume-success">
-                <div class="notice" style="background: rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.5); color: #22d3ee;">
+                <div class="notice" style="background: #d4edda; border-color: #28a745; color: #155724;">
                     <span class="icon">✅</span> Resume analyzed successfully! We found key information about your background.
                 </div>
-                <div id="pro-resume-summary" style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 12px; padding: 20px; margin-top: 15px; color: #e0e0e8;">
+                <div id="pro-resume-summary" style="background: #f8f9ff; border-radius: 12px; padding: 20px; margin-top: 15px;">
                     <!-- Resume summary will be shown here -->
                 </div>
             </div>
@@ -1598,7 +1377,7 @@
             <h2><span class="icon">🎯</span> Refine Your Target Preferences</h2>
             <p class="panel-description">Answer a few questions to help us find the perfect contacts for you.</p>
             
-            <div class="notice" style="background: rgba(244, 114, 182, 0.12); border-color: rgba(244, 114, 182, 0.4); color: #f472b6;">
+            <div class="notice" style="background: #fff3e0; border-color: #ff9800; color: #e65100;">
                 <span class="icon">🤖</span>
                 <strong>AI-Powered:</strong> Based on your resume and these preferences, we'll find highly relevant targets in <span id="pref-track-display">your field</span>.
             </div>
@@ -1723,6 +1502,7 @@
             </div>
 
             <div class="btn-group">
+                <button class="btn btn-secondary" id="btn-step1-back">← Back to Mode Selection</button>
                 <button class="btn btn-primary" id="btn-step1-next" disabled>Next Step →</button>
             </div>
         </div>
@@ -1732,22 +1512,6 @@
             <h2><span class="icon">👤</span> Step 2: Your Profile</h2>
             <p class="panel-description">Help us understand your background to generate personalized emails.</p>
 
-            <!-- Resume choice section (hidden in Quick Start mode) -->
-            <div id="resume-choice-section">
-                <div class="notice" id="resume-tip">
-                    <span class="icon">💡</span>
-                    <strong>Tip:</strong> Uploading a resume is recommended for the best results!
-                </div>
-
-                <div class="form-group">
-                    <label>Do you have a resume to upload?</label>
-                    <div class="choice-buttons" id="resume-choice">
-                        <button class="choice-btn" data-value="yes">✅ Yes, I have a resume</button>
-                        <button class="choice-btn" data-value="no">📝 No, I'll answer questions</button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Quick Start Mode Notice -->
             <div class="notice hidden" id="quick-start-notice" style="background: #e3f2fd; border-color: #2196f3; color: #1565c0;">
                 <span class="icon">⚡</span>
@@ -1755,7 +1519,7 @@
             </div>
 
             <!-- Resume Upload Section -->
-            <div class="hidden" id="resume-upload-section">
+            <div id="resume-upload-section">
                 <div class="form-group">
                     <label>Optional: Upload your resume (PDF)</label>
                     <div style="border: 1px dashed rgba(0,0,0,0.25); border-radius: 16px; padding: 34px; text-align: center; background: rgba(255,255,255,0.6); cursor: pointer; backdrop-filter: blur(18px);" id="qs-resume-dropzone">
@@ -1770,7 +1534,7 @@
                     <div class="loading-text">Analyzing your resume...</div>
                 </div>
                 <div class="hidden" id="resume-success">
-                    <div class="notice" style="background: rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.5); color: #22d3ee;">
+                    <div class="notice" style="background: #d4edda; border-color: #28a745; color: #155724;">
                         <span class="icon">✅</span> Resume analyzed successfully!
                     </div>
                 </div>
@@ -1783,7 +1547,7 @@
             </div>
             <div class="form-group">
                 <label>Optional: Paste key info from your profile</label>
-                <p style="font-size: 12px; color: #a0a0b0; margin-bottom: 8px;">
+                <p style="font-size: 12px; color: #666; margin-bottom: 8px;">
                     You can paste your LinkedIn “About” section, headline, or any highlights you want the AI to see.
                 </p>
                 <textarea id="sender-profile-extra" rows="3" placeholder="Paste a short description, headline, or key points from your profile..."></textarea>
@@ -1836,6 +1600,17 @@
                     <span class="icon">💡</span> Tell us what to look for and we'll propose great targets.
                 </div>
 
+                <div class="form-group" id="institution-section">
+                    <label>AI-recommended schools/colleges</label>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Select学校/学院后，点击 Find Matches 爬取导师信息。</p>
+                    <div id="institution-loading" class="loading hidden">
+                        <div class="spinner"></div>
+                        <div class="loading-text">Generating school/college recommendations...</div>
+                    </div>
+                    <div id="institution-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;"></div>
+                    <div id="institution-error" style="color: #c00; font-size: 12px; margin-top: 6px; display: none;"></div>
+                </div>
+
                 <!-- Optional: structured targeting context -->
                 <div class="form-group" style="margin-top: 10px;">
                     <button class="btn btn-secondary btn-icon" id="btn-toggle-target-advanced" type="button">
@@ -1845,7 +1620,7 @@
                 <div class="hidden" id="target-advanced">
                     <div class="form-group">
                         <label>What kind of people are you trying to reach? (role/org/subfield)</label>
-                        <p style="font-size: 12px; color: #a0a0b0; margin-bottom: 8px;">
+                        <p style="font-size: 12px; color: #666; margin-bottom: 8px;">
                             Examples: "Assistant professor in NLP", "startup PM in healthcare", "VC associate investing in devtools".
                         </p>
                         <textarea id="target-search-intent" rows="3" placeholder="Describe the ideal target in one or two sentences..."></textarea>
@@ -1876,25 +1651,12 @@
                     </div>
                     <div class="form-group">
                         <label>Evidence links or snippets (optional)</label>
-                        <p style="font-size: 12px; color: #a0a0b0; margin-bottom: 8px;">
+                        <p style="font-size: 12px; color: #666; margin-bottom: 8px;">
                             Paste any URLs/snippets you want the recommender to use as evidence. Avoid anything uncertain.
                         </p>
                         <textarea id="target-evidence" rows="3" placeholder="URLs or short snippets to ground the search..."></textarea>
                     </div>
                 </div>
-                <!-- Interactive target preference questionnaire -->
-                <div class="questionnaire" id="target-questionnaire">
-                    <h3 style="margin-bottom: 12px; color: #f0f0f5;">Refine your ideal targets</h3>
-                    <p style="font-size: 13px; color: #a0a0b0; margin-bottom: 10px;">
-                        Answer a few quick questions about the kind of people you want to reach. You can skip questions or stop at any time.
-                    </p>
-                    <div id="target-questions-container"></div>
-                    <div class="loading" id="target-questionnaire-loading">
-                        <div class="spinner"></div>
-                        <div class="loading-text">Thinking about the best questions...</div>
-                    </div>
-                </div>
-
                 <div class="btn-group" style="justify-content: flex-end;">
                     <button class="btn btn-primary" id="btn-find-matches">Find Matches</button>
                 </div>
@@ -1916,7 +1678,7 @@
                 </div>
                 <div class="form-group">
                     <label>Optional: Paste key info about this target</label>
-                    <p style="font-size: 12px; color: #a0a0b0; margin-bottom: 8px;">
+                    <p style="font-size: 12px; color: #666; margin-bottom: 8px;">
                         You can paste a short bio, summary, or key points from their profile to give the AI more context.
                     </p>
                     <textarea id="target-profile-extra" rows="3" placeholder="Paste a short bio, key projects, or notes about this person..."></textarea>
@@ -1924,7 +1686,7 @@
                 <!-- Document upload (hidden in Quick Start mode) -->
                 <div class="form-group" id="target-doc-upload-section">
                     <label>Upload Target's Document (Optional)</label>
-                    <p style="font-size: 12px; color: #a0a0b0; margin-bottom: 10px;">📎 Upload a PDF, TXT, or MD file with information about this person</p>
+                    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">📎 Upload a PDF, TXT, or MD file with information about this person</p>
                     <input type="file" id="target-doc-file" accept=".pdf,.txt,.md">
                 </div>
                 <div class="loading hidden" id="target-doc-loading">
@@ -1932,7 +1694,7 @@
                     <div class="loading-text">Analyzing document...</div>
                 </div>
                 <div class="hidden" id="target-doc-success">
-                    <div class="notice" style="background: rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.5); color: #22d3ee;">
+                    <div class="notice" style="background: #d4edda; border-color: #28a745; color: #155724;">
                         <span class="icon">✅</span> Document analyzed! Profile info extracted.
                     </div>
                 </div>
@@ -1963,7 +1725,7 @@
 
             <!-- Match Details -->
             <div class="match-details" id="match-details">
-                <h4 style="color: #f0f0f5; margin-bottom: 15px;">Match Analysis</h4>
+                <h4 style="color: #333; margin-bottom: 15px;">Match Analysis</h4>
                 <div class="match-section">
                     <h5>🎯 Compatibility Score</h5>
                     <p id="match-score-text">Loading...</p>
@@ -2008,7 +1770,7 @@
             <!-- Optional custom email template (only for template mode) -->
             <div class="form-group hidden" id="email-template-section">
                 <label for="email-template">Your email template</label>
-                <p style="margin: 4px 0 8px; font-size: 13px; color: #a0a0b0;">
+                <p style="margin: 4px 0 8px; font-size: 13px; color: #666;">
                     Paste a template here if you selected <strong>Use My Template</strong>. The AI will keep its structure and tone,
                     and fill in details using your profile and the target's profile.
                 </p>
@@ -2049,7 +1811,7 @@ I&apos;m {{sender_name}}, currently ...
             </div>
             <div class="form-group">
                 <label>Evidence you want the email to cite (optional)</label>
-                <p style="font-size: 12px; color: #a0a0b0; margin-bottom: 8px;">
+                <p style="font-size: 12px; color: #666; margin-bottom: 8px;">
                     Paste links or short snippets you’re confident are true. The model should not invent facts beyond these.
                 </p>
                 <textarea id="email-evidence" rows="3" placeholder="URLs or snippets to cite..."></textarea>
@@ -2068,7 +1830,7 @@ I&apos;m {{sender_name}}, currently ...
 
             <!-- Email Navigation for Multiple Targets -->
             <div class="hidden" id="email-nav" style="margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(139, 92, 246, 0.12); padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(139, 92, 246, 0.2);">
+                <div style="display: flex; align-items: center; justify-content: space-between; background: #f0f4ff; padding: 12px 20px; border-radius: 10px;">
                     <button class="btn btn-secondary btn-icon" id="btn-prev-email" disabled>← Previous</button>
                     <span style="font-weight: 600; color: var(--accent);">Email <span id="current-email-num">1</span> of <span id="total-emails">1</span></span>
                     <button class="btn btn-secondary btn-icon" id="btn-next-email" disabled>Next →</button>
@@ -2081,7 +1843,7 @@ I&apos;m {{sender_name}}, currently ...
             </div>
 
             <div class="hidden" id="email-result">
-                <div id="target-info" style="margin-bottom: 20px; padding: 15px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 10px; color: #e0e0e8;">
+                <div id="target-info" style="margin-bottom: 20px; padding: 15px; background: #f8f9ff; border-radius: 10px;">
                     <strong>To:</strong> <span id="email-target-name">-</span><br>
                     <strong>Field:</strong> <span id="email-target-field">-</span>
                 </div>
@@ -2154,39 +1916,39 @@ I&apos;m {{sender_name}}, currently ...
 
     <!-- Privacy Notice Modal -->
     <div class="modal-overlay" id="privacy-modal">
-        <div class="modal-content" style="max-width: 550px; background: rgba(20, 20, 35, 0.95); border: 1px solid rgba(139, 92, 246, 0.3);">
-            <div class="modal-header" style="border-bottom-color: rgba(34, 211, 238, 0.4);">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header" style="border-bottom-color: #28a745;">
                 <h3>🔒 Privacy Notice</h3>
             </div>
             <div style="text-align: center; margin-bottom: 20px;">
                 <div style="font-size: 4em; margin-bottom: 10px;">🛡️</div>
-                <h4 style="color: #f0f0f5; margin-bottom: 15px;">Your Privacy Matters to Us</h4>
+                <h4 style="color: #333; margin-bottom: 15px;">Your Privacy Matters to Us</h4>
             </div>
-            <div class="profile-section" style="background: rgba(139, 92, 246, 0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(139, 92, 246, 0.2);">
-                <p style="color: #c4b5fd; line-height: 1.8; margin-bottom: 15px;">
+            <div class="profile-section" style="background: #f8f9ff; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <p style="color: #555; line-height: 1.8; margin-bottom: 15px;">
                     <strong>We want you to know:</strong>
                 </p>
                 <ul style="list-style: none; padding: 0;">
-                    <li style="padding: 10px 0; border-bottom: 1px solid rgba(139, 92, 246, 0.2); display: flex; align-items: flex-start; gap: 10px;">
-                        <span style="color: #22d3ee; font-size: 1.2em;">✓</span>
-                        <span style="color: #e0e0e8;">Your personal information and answers are <strong>only used</strong> for matching targets and generating professional emails.</span>
+                    <li style="padding: 10px 0; border-bottom: 1px solid #e0e0e0; display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="color: #28a745; font-size: 1.2em;">✓</span>
+                        <span>Your personal information and answers are <strong>only used</strong> for matching targets and generating professional emails.</span>
                     </li>
-                    <li style="padding: 10px 0; border-bottom: 1px solid rgba(139, 92, 246, 0.2); display: flex; align-items: flex-start; gap: 10px;">
-                        <span style="color: #22d3ee; font-size: 1.2em;">✓</span>
-                        <span style="color: #e0e0e8;">Your data will <strong>not be shared</strong> with any third parties or used for any other purposes.</span>
+                    <li style="padding: 10px 0; border-bottom: 1px solid #e0e0e0; display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="color: #28a745; font-size: 1.2em;">✓</span>
+                        <span>Your data will <strong>not be shared</strong> with any third parties or used for any other purposes.</span>
                     </li>
-                    <li style="padding: 10px 0; border-bottom: 1px solid rgba(139, 92, 246, 0.2); display: flex; align-items: flex-start; gap: 10px;">
-                        <span style="color: #22d3ee; font-size: 1.2em;">✓</span>
-                        <span style="color: #e0e0e8;">Uploaded resumes and profile information are processed <strong>securely</strong> and not stored permanently.</span>
+                    <li style="padding: 10px 0; border-bottom: 1px solid #e0e0e0; display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="color: #28a745; font-size: 1.2em;">✓</span>
+                        <span>Uploaded resumes and profile information are processed <strong>securely</strong> and not stored permanently.</span>
                     </li>
                     <li style="padding: 10px 0; display: flex; align-items: flex-start; gap: 10px;">
-                        <span style="color: #22d3ee; font-size: 1.2em;">✓</span>
-                        <span style="color: #e0e0e8;">You can close this app at any time and your session data will be cleared.</span>
+                        <span style="color: #28a745; font-size: 1.2em;">✓</span>
+                        <span>You can close this app at any time and your session data will be cleared.</span>
                     </li>
                 </ul>
             </div>
             <div style="text-align: center;">
-                <p style="color: #a0a0b0; font-size: 13px; margin-bottom: 20px;">
+                <p style="color: #666; font-size: 13px; margin-bottom: 20px;">
                     By continuing, you acknowledge that you have read and understood this privacy notice.
                 </p>
                 <button class="btn btn-primary" id="btn-privacy-accept" style="min-width: 200px;">
@@ -2250,16 +2012,8 @@ I&apos;m {{sender_name}}, currently ...
     </div>
 
     <script>
-        // Generate unique session ID
-        function generateSessionId() {
-            const timestamp = Date.now().toString(36);
-            const randomPart = Math.random().toString(36).substring(2, 10);
-            return `${timestamp}-${randomPart}`;
-        }
-        
         // Global state
         const state = {
-            sessionId: generateSessionId(),  // Unique session ID for this user session
             mode: null,  // 'quick' or 'professional'
             proTrack: null,  // 'finance' or 'academic' (for professional mode)
             proTargetChoice: null,  // 'have' or 'need' (for professional mode)
@@ -2277,7 +2031,7 @@ I&apos;m {{sender_name}}, currently ...
                 outreachGoal: '',
                 prominence: ''
             },
-            hasResume: null,
+            hasResume: false,
             senderProfile: null,
             questionnaireHistory: [], // [{ question, answer }]
             questionnaireQuestions: [], // Batch questions (Quick Start)
@@ -2301,6 +2055,8 @@ I&apos;m {{sender_name}}, currently ...
             targetExamples: '',
             targetEvidence: '',
             targetContactability: 'balanced', // balanced | reply | prestige
+            institutionCandidates: [],
+            selectedInstitutions: [],
             // Optional email context (Step 4)
             emailGoal: '',
             emailAsk: '',
@@ -2350,7 +2106,7 @@ I&apos;m {{sender_name}}, currently ...
                     outreachGoal: '',
                     prominence: ''
                 },
-                hasResume: mode === 'quick' ? false : null,
+                hasResume: false,
                 senderProfile: null,
                 questionnaireHistory: [],
                 questionnaireQuestions: [],
@@ -2373,6 +2129,8 @@ I&apos;m {{sender_name}}, currently ...
                 targetExamples: '',
                 targetEvidence: '',
                 targetContactability: 'balanced',
+                institutionCandidates: [],
+                selectedInstitutions: [],
                 emailGoal: '',
                 emailAsk: '',
                 emailValue: '',
@@ -2428,7 +2186,7 @@ I&apos;m {{sender_name}}, currently ...
                 if (el) el.classList.remove('visible');
             });
 
-            ['resume-upload-section', 'resume-success', 'quick-start-notice', 'target-preferences', 'target-advanced', 'manual-target-section', 'recommendation-section', 'email-nav', 'email-result', 'target-doc-success', 'pro-target-advanced']
+            ['resume-success', 'quick-start-notice', 'target-preferences', 'target-advanced', 'manual-target-section', 'recommendation-section', 'email-nav', 'email-result', 'target-doc-success', 'pro-target-advanced']
                 .forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.classList.add('hidden');
@@ -2438,13 +2196,10 @@ I&apos;m {{sender_name}}, currently ...
             const proTargetAdvBtn = document.getElementById('btn-toggle-pro-target-advanced');
             if (proTargetAdvBtn) proTargetAdvBtn.textContent = '⚙️ Add more targeting details (optional)';
 
-            ['target-questionnaire', 'questionnaire-section'].forEach(id => {
+            ['questionnaire-section'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('visible');
             });
-
-            const resumeChoice = document.getElementById('resume-choice-section');
-            if (resumeChoice) resumeChoice.classList.remove('hidden');
 
             const targetDocSection = document.getElementById('target-doc-upload-section');
             if (targetDocSection) {
@@ -2475,7 +2230,7 @@ I&apos;m {{sender_name}}, currently ...
             const proSummary = document.getElementById('pro-resume-summary');
             if (proSummary) proSummary.innerHTML = '';
 
-            ['questions-container', 'target-questions-container', 'recommendation-list', 'selected-target-tags'].forEach(id => {
+            ['questions-container', 'target-questions-container', 'recommendation-list', 'selected-target-tags', 'institution-list'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.replaceChildren();
             });
@@ -2507,7 +2262,7 @@ I&apos;m {{sender_name}}, currently ...
             if (currentEmailNum) currentEmailNum.textContent = '1';
             if (totalEmails) totalEmails.textContent = '1';
 
-            ['upload-loading', 'questionnaire-loading', 'target-questionnaire-loading', 'rec-loading', 'email-loading', 'target-doc-loading'].forEach(id => {
+            ['upload-loading', 'questionnaire-loading', 'rec-loading', 'email-loading', 'target-doc-loading'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('visible');
             });
@@ -2702,123 +2457,41 @@ I&apos;m {{sender_name}}, currently ...
                 trackNextBtn.disabled = true;
             });
             
-            // Track next button -> Resume upload
-            trackNextBtn.addEventListener('click', function() {
-                document.getElementById('pro-track-selection').classList.add('hidden');
-                document.getElementById('pro-resume-upload').classList.remove('hidden');
-                // Update display text
-                const trackDisplay = state.proTrack === 'finance' ? 'Finance' : 'Academic';
-                document.getElementById('selected-track-display').textContent = trackDisplay;
-            });
-            
-            // Resume dropzone
-            const dropzone = document.getElementById('pro-resume-dropzone');
-            const fileInput = document.getElementById('pro-resume-file');
-            
-            dropzone.addEventListener('click', () => fileInput.click());
-            
-            dropzone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropzone.style.borderColor = '#5856d6';
-                dropzone.style.background = '#f0f4ff';
-            });
-            
-            dropzone.addEventListener('dragleave', () => {
-                dropzone.style.borderColor = '#0071e3';
-                dropzone.style.background = '#f8f9ff';
-            });
-            
-            dropzone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropzone.style.borderColor = '#0071e3';
-                dropzone.style.background = '#f8f9ff';
-                if (e.dataTransfer.files.length > 0) {
-                    fileInput.files = e.dataTransfer.files;
-                    uploadProResume(e.dataTransfer.files[0]);
-                }
-            });
-            
-            fileInput.addEventListener('change', function() {
-                if (this.files.length > 0) {
-                    uploadProResume(this.files[0]);
-                }
-            });
-            
-            // Resume back button
-            document.getElementById('btn-resume-back').addEventListener('click', function() {
-                document.getElementById('pro-resume-upload').classList.add('hidden');
-                document.getElementById('pro-track-selection').classList.remove('hidden');
-            });
-            
-            // Resume next button -> Target choice
-            document.getElementById('btn-resume-next').addEventListener('click', function() {
-                document.getElementById('pro-resume-upload').classList.add('hidden');
-                document.getElementById('pro-target-choice').classList.remove('hidden');
-            });
-            
-            // Target choice cards
-            const targetChoiceCards = document.querySelectorAll('#pro-target-choice .mode-card');
-            const targetChoiceNextBtn = document.getElementById('btn-target-choice-next');
-            
-            targetChoiceCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    targetChoiceCards.forEach(c => c.classList.remove('selected'));
-                    this.classList.add('selected');
-                    state.proTargetChoice = this.dataset.targetChoice;
-                    targetChoiceNextBtn.disabled = false;
+            function applyProfessionalDefaults() {
+                const purposeValue = state.proTrack === 'academic' ? 'academic' : 'job';
+                const fieldValue = state.proTrack === 'academic' ? 'ai-ml' : 'finance';
+
+                document.querySelectorAll('#purpose-options .option-card').forEach(card => {
+                    const isSelected = card.dataset.value === purposeValue;
+                    card.classList.toggle('selected', isSelected);
                 });
-            });
-            
-            // Target choice back button
-            document.getElementById('btn-target-choice-back').addEventListener('click', function() {
-                document.getElementById('pro-target-choice').classList.add('hidden');
-                document.getElementById('pro-resume-upload').classList.remove('hidden');
-            });
-            
-            // Target choice next button
-            targetChoiceNextBtn.addEventListener('click', function() {
-                document.getElementById('pro-target-choice').classList.add('hidden');
-                
-                if (state.proTargetChoice === 'have') {
-                    // User has targets - go directly to Step 3 (manual target input)
-                    // Set up state based on track selection
-                    state.purpose = state.proTrack === 'academic' ? 'academic' : 'job';
-                    state.field = state.proTrack === 'academic' ? 'ai-ml' : 'finance';
-                    state.hasResume = true;
-                    state.hasTarget = true;
-                    
-                    // Show progress bar and go to step 3
-                    document.getElementById('progress-container').classList.remove('hidden');
-                    goToStep(3);
-                    
-                    // Show manual target input section, hide recommendation section
-                    document.getElementById('manual-target-section').classList.remove('hidden');
-                    document.getElementById('recommendation-section').classList.add('hidden');
-                    document.getElementById('auto-target-section').classList.add('hidden');
-                    
-                    // Update Step 3 title for clarity
-                    const step3Title = document.querySelector('#step-3 h2');
-                    if (step3Title) {
-                        step3Title.innerHTML = '<span class="icon">👤</span> Step 3: Enter Your Target';
-                    }
-                } else {
-                    // User needs recommendations - show preference questions
-                    document.getElementById('pro-preferences').classList.remove('hidden');
-                    const trackDisplay = state.proTrack === 'finance' ? 'Finance' : 'Academic';
-                    document.getElementById('pref-track-display').textContent = trackDisplay;
-                    loadProPreferenceQuestions();
-                }
-            });
-            
-            // Preference back button
-            document.getElementById('btn-pref-back').addEventListener('click', function() {
-                document.getElementById('pro-preferences').classList.add('hidden');
-                document.getElementById('pro-target-choice').classList.remove('hidden');
-            });
-            
-            // Find targets button
-            document.getElementById('btn-find-pro-targets').addEventListener('click', async function() {
-                await findProTargets();
+                state.purpose = purposeValue;
+                const purposeCustom = document.getElementById('purpose-custom');
+                if (purposeCustom) purposeCustom.classList.remove('visible');
+
+                document.querySelectorAll('#field-options .option-card').forEach(card => {
+                    const isSelected = card.dataset.value === fieldValue;
+                    card.classList.toggle('selected', isSelected);
+                });
+                state.field = fieldValue;
+                const fieldCustom = document.getElementById('field-custom');
+                if (fieldCustom) fieldCustom.classList.remove('visible');
+
+                checkStep1Valid();
+            }
+
+            // Track next button -> enter main flow
+            trackNextBtn.addEventListener('click', function() {
+                const trackPanel = document.getElementById('pro-track-selection');
+                if (trackPanel) trackPanel.classList.add('hidden');
+
+                const progress = document.getElementById('progress-container');
+                if (progress) progress.classList.remove('hidden');
+
+                state.hasResume = false;
+                state.hasTarget = null;
+                applyProfessionalDefaults();
+                goToStep(1);
             });
         }
 
@@ -2833,7 +2506,7 @@ I&apos;m {{sender_name}}, currently ...
             
             const formData = new FormData();
             formData.append('pdf', file);
-            formData.append('session_id', state.sessionId);
+            formData.append('session_id', 'pro-session');
             
             try {
                 const response = await fetch('/api/upload-sender-pdf', {
@@ -2880,90 +2553,6 @@ I&apos;m {{sender_name}}, currently ...
             }
         }
 
-        // Fixed Finance questions based on IBD structure, bank types, and career ladder
-        const FINANCE_FIXED_QUESTIONS = [
-            {
-                id: 'bank_type',
-                question: 'What type of investment bank interests you most?',
-                type: 'multi',
-                options: [
-                    { value: 'bulge_bracket', label: 'Bulge Bracket (Goldman Sachs, Morgan Stanley, J.P. Morgan, Citi, BofA, UBS, Barclays, Deutsche Bank)' },
-                    { value: 'commercial_ib', label: 'Commercial Banks with IB (RBC, HSBC, Wells Fargo, Mizuho, BNP Paribas, BMO, TD Securities)' },
-                    { value: 'middle_market', label: 'Middle Market Banks (Jefferies, William Blair, Piper Sandler, Raymond James, Cowen)' },
-                    { value: 'boutique', label: 'Boutiques (Lazard, Evercore, Moelis, PJT, Greenhill, Rothschild, Perella Weinberg)' }
-                ]
-            },
-            {
-                id: 'product_vs_sector',
-                question: 'Are you more interested in Product Groups or Sector/Industry Groups?',
-                type: 'multi',
-                options: [
-                    { value: 'product', label: 'Product Groups — specialist in specific transaction types across industries' },
-                    { value: 'sector', label: 'Sector Groups — industry coverage, client relationships, deal origination' },
-                    { value: 'both', label: 'Both — I want exposure to both product and sector work' }
-                ]
-            },
-            {
-                id: 'product_group',
-                question: 'Which Product Group(s) interest you? (Select all that apply)',
-                type: 'multi',
-                showIf: ['product', 'both'],
-                dependsOn: 'product_vs_sector',
-                options: [
-                    { value: 'ma', label: 'M&A Advisory — buy-side, sell-side, mergers, strategic reviews, restructuring' },
-                    { value: 'dcm', label: 'DCM (Debt Capital Markets) — debt issuance, bond structuring, syndication' },
-                    { value: 'lev_fin', label: 'Leveraged Finance — LBO financing, high-yield bonds, leveraged loans' },
-                    { value: 'ecm', label: 'ECM (Equity Capital Markets) — IPOs, follow-ons, equity issuance strategy' }
-                ]
-            },
-            {
-                id: 'sector_group',
-                question: 'Which Sector/Industry Group(s) interest you? (Select all that apply)',
-                type: 'multi',
-                showIf: ['sector', 'both'],
-                dependsOn: 'product_vs_sector',
-                options: [
-                    { value: 'tmt', label: 'TMT (Technology, Media & Telecom)' },
-                    { value: 'healthcare', label: 'Healthcare' },
-                    { value: 'fig', label: 'FIG (Financial Institutions Group)' },
-                    { value: 'energy', label: 'Energy / Power & Utilities' },
-                    { value: 'industrials', label: 'Industrials' },
-                    { value: 'consumer', label: 'Consumer Products & Retail' },
-                    { value: 'real_estate', label: 'Real Estate, Lodging & Leisure' },
-                    { value: 'sponsors', label: 'Financial Sponsors (PE/Sponsor coverage)' },
-                    { value: 'other_sector', label: 'Other / No specific preference' }
-                ]
-            },
-            {
-                id: 'target_seniority',
-                question: 'What seniority level of professionals do you want to connect with?',
-                type: 'multi',
-                options: [
-                    { value: 'analyst', label: 'Analyst (Year 1-3) — financial modeling, research, deal support' },
-                    { value: 'associate', label: 'Associate (Year 4-6) — transaction support, manage analysts, model development' },
-                    { value: 'vp_director', label: 'VP / Director (Year 7-9) — run transactions, develop relationships, manage teams' },
-                    { value: 'ed_svp', label: 'Executive Director / SVP (Year 10-12) — own client base, generate revenue' },
-                    { value: 'md', label: 'Managing Director (Year 12+) — client ownership, franchise building, team leadership' }
-                ]
-            },
-            {
-                id: 'connection_goal',
-                question: 'What is your primary goal for connecting with these professionals?',
-                type: 'multi',
-                options: [
-                    { value: 'learn_role', label: 'Learn about their day-to-day role and responsibilities' },
-                    { value: 'career_advice', label: 'Get career advice and guidance on breaking into IB' },
-                    { value: 'referral', label: 'Explore referral opportunities for open positions' },
-                    { value: 'industry_insight', label: 'Gain industry insights and market knowledge' },
-                    { value: 'mentorship', label: 'Seek mentorship or long-term guidance' }
-                ]
-            }
-        ];
-
-        // State for finance fixed questions
-        let financeQuestionIndex = 0;
-        let financeAnswers = {};
-
         // Load preference questions for Professional mode
         async function loadProPreferenceQuestions() {
             const container = document.getElementById('pro-preference-questions');
@@ -2971,15 +2560,6 @@ I&apos;m {{sender_name}}, currently ...
             
             container.innerHTML = '';
             loading.classList.remove('hidden');
-
-            // For Finance track, use fixed questions
-            if (state.proTrack === 'finance') {
-                loading.classList.add('hidden');
-                financeQuestionIndex = 0;
-                financeAnswers = {};
-                renderFinanceFixedQuestion();
-                return;
-            }
             
             try {
                 const response = await fetch('/api/next-target-question', {
@@ -3168,293 +2748,6 @@ I&apos;m {{sender_name}}, currently ...
             });
         }
 
-        // Render fixed Finance questions with multi-select support
-        function renderFinanceFixedQuestion() {
-            const container = document.getElementById('pro-preference-questions');
-            container.innerHTML = '';
-
-            // Find the next applicable question (skip questions that don't apply based on conditions)
-            let currentQuestion = null;
-            while (financeQuestionIndex < FINANCE_FIXED_QUESTIONS.length) {
-                const q = FINANCE_FIXED_QUESTIONS[financeQuestionIndex];
-                
-                // Check if this question should be shown based on dependencies
-                if (q.dependsOn && q.showIf) {
-                    const dependsAnswer = financeAnswers[q.dependsOn];
-                    if (!dependsAnswer || !q.showIf.some(v => dependsAnswer.includes(v))) {
-                        // Skip this question
-                        financeQuestionIndex++;
-                        continue;
-                    }
-                }
-                
-                currentQuestion = q;
-                break;
-            }
-
-            // All questions answered
-            if (!currentQuestion) {
-                // Build preference summary for state
-                buildFinancePreferenceSummary();
-                
-                const info = document.createElement('div');
-                info.className = 'notice';
-                info.style.cssText = 'background: rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.5); color: #22d3ee;';
-                info.innerHTML = `<span class="icon">✅</span> Great! We have your preferences. Click <strong>"Find My Targets"</strong> to discover professionals matching your criteria.`;
-                container.appendChild(info);
-
-                // Show summary of selections
-                const summary = document.createElement('div');
-                summary.className = 'finance-summary';
-                summary.style.cssText = 'margin-top: 20px; padding: 15px; background: rgba(139, 92, 246, 0.1); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.2);';
-                
-                let summaryHtml = '<h4 style="color: #c4b5fd; margin-bottom: 12px;">📋 Your Preferences Summary</h4><ul style="list-style: none; padding: 0; margin: 0;">';
-                
-                for (const [key, values] of Object.entries(financeAnswers)) {
-                    const q = FINANCE_FIXED_QUESTIONS.find(q => q.id === key);
-                    if (q && values.length > 0) {
-                        const labels = values.map(v => {
-                            const opt = q.options.find(o => o.value === v);
-                            return opt ? opt.label.split(' — ')[0].split(' (')[0] : v;
-                        });
-                        summaryHtml += `<li style="padding: 8px 0; border-bottom: 1px solid rgba(139, 92, 246, 0.2); color: #e0e0e8;">
-                            <strong style="color: #c4b5fd;">${q.question.split('?')[0]}:</strong><br>
-                            <span style="color: #a0a0b0; font-size: 13px;">${labels.join(', ')}</span>
-                        </li>`;
-                    }
-                }
-                summaryHtml += '</ul>';
-                summary.innerHTML = summaryHtml;
-                container.appendChild(summary);
-                return;
-            }
-
-            // Create question card
-            const card = document.createElement('div');
-            card.className = 'question-card';
-            
-            const questionNum = Object.keys(financeAnswers).length + 1;
-            let innerHtml = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h4 style="margin: 0; color: #f0f0f5;">Q${questionNum}: ${currentQuestion.question}</h4>
-                    <span style="color: #a0a0b0; font-size: 12px;">${financeQuestionIndex + 1}/${FINANCE_FIXED_QUESTIONS.length}</span>
-                </div>
-                <p style="font-size: 13px; color: #a0a0b0; margin-bottom: 15px;">Select one or more options that apply to you:</p>
-                <div class="finance-options" id="finance-question-options">
-            `;
-
-            currentQuestion.options.forEach((opt, idx) => {
-                innerHtml += `
-                    <div class="finance-option" data-value="${opt.value}" data-index="${idx}">
-                        <div class="finance-option-checkbox">
-                            <svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                        </div>
-                        <div class="finance-option-label">${opt.label}</div>
-                    </div>
-                `;
-            });
-
-            innerHtml += `
-                </div>
-                <div class="btn-group" style="margin-top: 20px; justify-content: flex-end;">
-                    <button class="btn btn-secondary" id="btn-finance-skip">Skip</button>
-                    <button class="btn btn-primary" id="btn-finance-next" disabled>Next Question →</button>
-                </div>
-            `;
-
-            card.innerHTML = innerHtml;
-            container.appendChild(card);
-
-            // Add styles for finance options if not already added
-            if (!document.getElementById('finance-option-styles')) {
-                const style = document.createElement('style');
-                style.id = 'finance-option-styles';
-                style.textContent = `
-                    .finance-options {
-                        display: flex;
-                        flex-direction: column;
-                        gap: 10px;
-                    }
-                    .finance-option {
-                        display: flex;
-                        align-items: flex-start;
-                        gap: 12px;
-                        padding: 14px 16px;
-                        background: rgba(255, 255, 255, 0.03);
-                        border: 1px solid rgba(139, 92, 246, 0.2);
-                        border-radius: 10px;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                    }
-                    .finance-option:hover {
-                        background: rgba(139, 92, 246, 0.1);
-                        border-color: rgba(139, 92, 246, 0.4);
-                    }
-                    .finance-option.selected {
-                        background: rgba(139, 92, 246, 0.15);
-                        border-color: #8b5cf6;
-                    }
-                    .finance-option-checkbox {
-                        width: 22px;
-                        height: 22px;
-                        min-width: 22px;
-                        border: 2px solid rgba(139, 92, 246, 0.4);
-                        border-radius: 5px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transition: all 0.2s ease;
-                    }
-                    .finance-option.selected .finance-option-checkbox {
-                        background: #8b5cf6;
-                        border-color: #8b5cf6;
-                    }
-                    .finance-option-checkbox .checkmark {
-                        width: 14px;
-                        height: 14px;
-                        color: #fff;
-                        opacity: 0;
-                        transform: scale(0.5);
-                        transition: all 0.15s ease;
-                    }
-                    .finance-option.selected .finance-option-checkbox .checkmark {
-                        opacity: 1;
-                        transform: scale(1);
-                    }
-                    .finance-option-label {
-                        color: #e0e0e8;
-                        font-size: 14px;
-                        line-height: 1.5;
-                    }
-                    .finance-option.selected .finance-option-label {
-                        color: #f0f0f5;
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-
-            // Event listeners for multi-select
-            const selectedValues = new Set();
-            const optionEls = container.querySelectorAll('.finance-option');
-            const nextBtn = document.getElementById('btn-finance-next');
-            const skipBtn = document.getElementById('btn-finance-skip');
-
-            optionEls.forEach(el => {
-                el.addEventListener('click', function() {
-                    const value = this.dataset.value;
-                    if (selectedValues.has(value)) {
-                        selectedValues.delete(value);
-                        this.classList.remove('selected');
-                    } else {
-                        selectedValues.add(value);
-                        this.classList.add('selected');
-                    }
-                    nextBtn.disabled = selectedValues.size === 0;
-                });
-            });
-
-            nextBtn.addEventListener('click', function() {
-                if (selectedValues.size === 0) return;
-                financeAnswers[currentQuestion.id] = Array.from(selectedValues);
-                financeQuestionIndex++;
-                renderFinanceFixedQuestion();
-            });
-
-            skipBtn.addEventListener('click', function() {
-                financeAnswers[currentQuestion.id] = [];
-                financeQuestionIndex++;
-                renderFinanceFixedQuestion();
-            });
-        }
-
-        // Build preference summary for API call
-        function buildFinancePreferenceSummary() {
-            const parts = [];
-            
-            // Bank type preference
-            if (financeAnswers.bank_type?.length > 0) {
-                const bankLabels = {
-                    'bulge_bracket': 'Bulge Bracket banks (Goldman Sachs, Morgan Stanley, J.P. Morgan, etc.)',
-                    'commercial_ib': 'Commercial Banks with IB capabilities (RBC, HSBC, Wells Fargo, etc.)',
-                    'middle_market': 'Middle Market banks (Jefferies, William Blair, Piper Sandler, etc.)',
-                    'boutique': 'Boutique advisory firms (Lazard, Evercore, Moelis, PJT, etc.)'
-                };
-                parts.push('Preferred bank types: ' + financeAnswers.bank_type.map(v => bankLabels[v] || v).join('; '));
-            }
-
-            // Product vs Sector preference
-            if (financeAnswers.product_vs_sector?.length > 0) {
-                const prefLabels = {
-                    'product': 'Product Groups (transaction specialists)',
-                    'sector': 'Sector/Industry Groups (client coverage)',
-                    'both': 'Both Product and Sector Groups'
-                };
-                parts.push('Group preference: ' + financeAnswers.product_vs_sector.map(v => prefLabels[v] || v).join('; '));
-            }
-
-            // Product groups
-            if (financeAnswers.product_group?.length > 0) {
-                const productLabels = {
-                    'ma': 'M&A Advisory',
-                    'dcm': 'Debt Capital Markets (DCM)',
-                    'lev_fin': 'Leveraged Finance',
-                    'ecm': 'Equity Capital Markets (ECM)'
-                };
-                parts.push('Product groups of interest: ' + financeAnswers.product_group.map(v => productLabels[v] || v).join(', '));
-            }
-
-            // Sector groups
-            if (financeAnswers.sector_group?.length > 0) {
-                const sectorLabels = {
-                    'tmt': 'TMT (Technology, Media & Telecom)',
-                    'healthcare': 'Healthcare',
-                    'fig': 'FIG (Financial Institutions)',
-                    'energy': 'Energy / Power & Utilities',
-                    'industrials': 'Industrials',
-                    'consumer': 'Consumer Products & Retail',
-                    'real_estate': 'Real Estate, Lodging & Leisure',
-                    'sponsors': 'Financial Sponsors',
-                    'other_sector': 'Other sectors'
-                };
-                parts.push('Sector groups of interest: ' + financeAnswers.sector_group.map(v => sectorLabels[v] || v).join(', '));
-            }
-
-            // Target seniority
-            if (financeAnswers.target_seniority?.length > 0) {
-                const seniorityLabels = {
-                    'analyst': 'Analyst (Year 1-3)',
-                    'associate': 'Associate (Year 4-6)',
-                    'vp_director': 'VP/Director (Year 7-9)',
-                    'ed_svp': 'Executive Director/SVP (Year 10-12)',
-                    'md': 'Managing Director (Year 12+)'
-                };
-                parts.push('Target seniority levels: ' + financeAnswers.target_seniority.map(v => seniorityLabels[v] || v).join(', '));
-            }
-
-            // Connection goal
-            if (financeAnswers.connection_goal?.length > 0) {
-                const goalLabels = {
-                    'learn_role': 'Learn about day-to-day role',
-                    'career_advice': 'Career advice on breaking into IB',
-                    'referral': 'Referral opportunities',
-                    'industry_insight': 'Industry insights',
-                    'mentorship': 'Mentorship'
-                };
-                parts.push('Connection goals: ' + financeAnswers.connection_goal.map(v => goalLabels[v] || v).join(', '));
-            }
-
-            // Store in proPreferenceHistory for API consumption
-            state.proPreferenceHistory = [{
-                question: 'Finance Targeting Preferences (Fixed Questions)',
-                answer: parts.join('\n')
-            }];
-
-            // Also store structured data for potential future use
-            state.financePreferences = { ...financeAnswers };
-        }
-
         // Find targets for Professional mode
         async function findProTargets() {
             const container = document.getElementById('pro-preference-questions');
@@ -3493,8 +2786,7 @@ I&apos;m {{sender_name}}, currently ...
                 loading.classList.add('hidden');
                 
                 if (data.success && data.recommendations && data.recommendations.length > 0) {
-                    // Store recommendations locally first (fix for state being cleared by click event)
-                    const recommendations = data.recommendations;
+                    state.recommendations = data.recommendations;
                     
                     // Transition to main flow with recommendations
                     document.getElementById('pro-preferences').classList.add('hidden');
@@ -3510,22 +2802,17 @@ I&apos;m {{sender_name}}, currently ...
                     goToStep(3);
                     
                     // Show recommendation section with results
-                    // Note: click() triggers resetRecommendationState() which clears state.recommendations
-                    // So we must set state.recommendations AFTER the click event
                     document.getElementById('target-choice').querySelector('[data-value="no"]').click();
                     document.getElementById('recommendation-section').classList.remove('hidden');
                     document.getElementById('target-preferences').classList.add('hidden');
-                    
-                    // IMPORTANT: Set state.recommendations AFTER click() to avoid being cleared
-                    state.recommendations = recommendations;
-                    renderRecommendations(recommendations);
+                    renderRecommendations(data.recommendations);
                     document.getElementById('rec-actions').style.display = 'flex';
                 } else {
                     throw new Error(data.error || 'No recommendations found');
                 }
             } catch (error) {
                 loading.classList.add('hidden');
-                container.innerHTML = `<div class="notice" style="background: rgba(244, 67, 54, 0.15); border-color: rgba(244, 67, 54, 0.5); color: #f87171;">
+                container.innerHTML = `<div class="notice" style="background: #f8d7da; border-color: #dc3545; color: #721c24;">
                     <span class="icon">❌</span> ${error.message}. Please try again or go back to adjust your preferences.
                 </div>`;
             }
@@ -3581,24 +2868,6 @@ I&apos;m {{sender_name}}, currently ...
 
         // Setup choice buttons (Yes/No)
         function setupChoiceButtons() {
-            // Resume choice
-            document.querySelectorAll('#resume-choice .choice-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    document.querySelectorAll('#resume-choice .choice-btn').forEach(b => b.classList.remove('selected'));
-                    this.classList.add('selected');
-                    state.hasResume = this.dataset.value === 'yes';
-                    
-                    if (state.hasResume) {
-                        document.getElementById('resume-upload-section').classList.remove('hidden');
-                        document.getElementById('questionnaire-section').classList.remove('visible');
-                    } else {
-                        document.getElementById('resume-upload-section').classList.add('hidden');
-                        document.getElementById('questionnaire-section').classList.add('visible');
-                        loadQuestionnaire();
-                    }
-                });
-            });
-
             // Target choice
             document.querySelectorAll('#target-choice .choice-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -3609,19 +2878,15 @@ I&apos;m {{sender_name}}, currently ...
                     if (state.hasTarget) {
                         document.getElementById('manual-target-section').classList.remove('hidden');
                         document.getElementById('target-preferences').classList.add('hidden');
-                        document.getElementById('target-questionnaire').classList.remove('visible');
                         document.getElementById('recommendation-section').classList.add('hidden');
                         document.getElementById('match-details').classList.remove('visible');
                         resetRecommendationState();
                     } else {
                         document.getElementById('manual-target-section').classList.add('hidden');
                         document.getElementById('target-preferences').classList.remove('hidden');
-                        document.getElementById('target-questionnaire').classList.add('visible');
                         document.getElementById('recommendation-section').classList.add('hidden');
                         document.getElementById('match-details').classList.remove('visible');
                         resetRecommendationState();
-                        state.targetPreferenceHistory = [];
-                        loadTargetQuestionnaire();
                         updateFindMatchesEnabled();
                     }
                     checkStep3Valid();
@@ -3633,14 +2898,81 @@ I&apos;m {{sender_name}}, currently ...
             document.getElementById('target-field').addEventListener('input', checkStep3Valid);
         }
 
-        // Setup preference questions for recommendations
+        // Setup preference actions for recommendations
         function setupPreferenceForm() {
-            // Static preference form removed; keep dynamic questionnaire only.
             const btn = document.getElementById('btn-find-matches');
             if (btn) {
                 btn.addEventListener('click', function() {
                     loadRecommendations();
                 });
+            }
+        }
+
+        function renderInstitutionList(list) {
+            const container = document.getElementById('institution-list');
+            const errorEl = document.getElementById('institution-error');
+            if (!container) return;
+            container.innerHTML = '';
+            if (errorEl) errorEl.style.display = 'none';
+
+            list.forEach((item) => {
+                if (!item || typeof item !== 'object') return;
+                const key = `${item.school}||${item.college || ''}`;
+                const selected = state.selectedInstitutions.some(ins => `${ins.school}||${ins.college || ''}` === key);
+                const card = document.createElement('div');
+                card.className = `option-card ${selected ? 'selected' : ''}`;
+                card.innerHTML = `
+                    <div class="title">${item.school}${item.college ? ' · ' + item.college : ''}</div>
+                    <div class="desc">${item.reason || ''}</div>
+                `;
+                card.addEventListener('click', function() {
+                    const exists = state.selectedInstitutions.some(ins => `${ins.school}||${ins.college || ''}` === key);
+                    if (exists) {
+                        state.selectedInstitutions = state.selectedInstitutions.filter(ins => `${ins.school}||${ins.college || ''}` !== key);
+                    } else {
+                        state.selectedInstitutions.push(item);
+                    }
+                    renderInstitutionList(state.institutionCandidates);
+                });
+                container.appendChild(card);
+            });
+        }
+
+        async function loadInstitutionRecommendations() {
+            const loading = document.getElementById('institution-loading');
+            const errorEl = document.getElementById('institution-error');
+            if (loading) loading.classList.remove('hidden');
+            if (errorEl) {
+                errorEl.style.display = 'none';
+                errorEl.textContent = '';
+            }
+            try {
+                const response = await fetch('/api/recommend-institutions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        purpose: getPurposeText(),
+                        field: getFieldText(),
+                        sender_profile: state.senderProfile
+                    })
+                });
+                const data = await response.json();
+                if (loading) loading.classList.add('hidden');
+                if (data.success) {
+                    state.institutionCandidates = data.recommendations || [];
+                    renderInstitutionList(state.institutionCandidates);
+                } else {
+                    if (errorEl) {
+                        errorEl.textContent = data.error || 'Failed to load school/college recommendations';
+                        errorEl.style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                if (loading) loading.classList.add('hidden');
+                if (errorEl) {
+                    errorEl.textContent = 'Error loading school/college recommendations';
+                    errorEl.style.display = 'block';
+                }
             }
         }
 
@@ -3693,7 +3025,7 @@ I&apos;m {{sender_name}}, currently ...
             
             const formData = new FormData();
             formData.append('pdf', file);
-            formData.append('session_id', state.sessionId);
+            formData.append('session_id', 'v2-session');
             
             try {
                 const response = await fetch('/api/upload-sender-pdf', {
@@ -3705,6 +3037,7 @@ I&apos;m {{sender_name}}, currently ...
                 
                 if (data.success) {
                     state.senderProfile = data.profile;
+                    state.hasResume = true;
                     loading.classList.remove('visible');
                     success.classList.remove('hidden');
                     updateQuickStartQuestionnaireVisibility();
@@ -4252,194 +3585,17 @@ I&apos;m {{sender_name}}, currently ...
 
         // Load next target preference question
         async function loadTargetQuestionnaire() {
-            const container = document.getElementById('target-questions-container');
-            const loading = document.getElementById('target-questionnaire-loading');
-            if (!container || !loading) return;
-            
-            container.innerHTML = '';
-            loading.classList.add('visible');
-            
-            try {
-                const response = await fetch('/api/next-target-question', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        purpose: getPurposeText(),
-                        field: getTargetFieldFromPreferences() || getFieldText(),
-                        sender_profile: state.senderProfile,
-                        history: state.targetPreferenceHistory,
-                        max_questions: 5
-                    })
-                });
-                const data = await response.json();
-                loading.classList.remove('visible');
-                if (data.success) {
-                    renderNextTargetQuestion(data);
-                } else {
-                    throw new Error(data.error || 'Failed to load target preference question');
-                }
-            } catch (error) {
-                loading.classList.remove('visible');
-                console.error('Error loading target questionnaire:', error);
-            }
+            // Question flow removed; keep stub for compatibility.
+            return;
         }
 
         // Render a single target preference question
         function renderNextTargetQuestion(result) {
-            const container = document.getElementById('target-questions-container');
-            if (!container) return;
-            container.innerHTML = '';
-            
-            if (result.done) {
-                const info = document.createElement('div');
-                info.className = 'notice';
-                info.innerHTML = `<span class="icon">✅</span> We have enough preference info. You can now find matches.`;
-                container.appendChild(info);
-                return;
-            }
-
-            const questionText = result.question || 'What kind of people would you most like to reach?';
-            const options = Array.isArray(result.options) ? result.options : null;
-            const card = document.createElement('div');
-            card.className = 'question-card';
-
-            let innerHtml = `<h4>Preference Q${state.targetPreferenceHistory.length + 1}: ${questionText}</h4>`;
-
-            if (options && options.length > 0) {
-                innerHtml += `
-                    <div class="question-options" id="target-question-options">
-                        ${options.map((opt, idx) => `
-                            <div class="question-option" data-index="${idx}">${opt}</div>
-                        `).join('')}
-                    </div>
-                    <div class="question-custom-input" id="target-question-custom-wrapper">
-                        <textarea id="target-question-custom-input" rows="2" placeholder="Your custom answer..."></textarea>
-                    </div>
-                `;
-            } else {
-                innerHtml += `
-                    <div class="question-custom-input visible">
-                        <textarea id="target-question-answer-input" rows="3" placeholder="Type your answer here..."></textarea>
-                    </div>
-                `;
-            }
-
-            innerHtml += `
-                <div class="btn-group" style="margin-top: 10px; justify-content: flex-end;">
-                    <button class="btn btn-secondary" id="btn-target-skip-question">Skip</button>
-                    <button class="btn btn-primary" id="btn-target-next-question" disabled>Next Preference</button>
-                </div>
-            `;
-
-            card.innerHTML = innerHtml;
-            container.appendChild(card);
-
-            const nextBtn = document.getElementById('btn-target-next-question');
-            const skipBtn = document.getElementById('btn-target-skip-question');
-            let selectedIndex = null;
-
-            if (options && options.length > 0) {
-                const optionEls = Array.from(document.querySelectorAll('#target-question-options .question-option'));
-                const customWrapper = document.getElementById('target-question-custom-wrapper');
-                const customInput = document.getElementById('target-question-custom-input');
-
-                function updateNextEnabled() {
-                    if (selectedIndex === null) {
-                        nextBtn.disabled = true;
-                        return;
-                    }
-                    const isLast = selectedIndex === options.length - 1;
-                    if (isLast) {
-                        nextBtn.disabled = !customInput.value.trim();
-                    } else {
-                        nextBtn.disabled = false;
-                    }
-                }
-
-                optionEls.forEach(el => {
-                    el.addEventListener('click', function() {
-                        optionEls.forEach(o => o.classList.remove('selected'));
-                        this.classList.add('selected');
-                        selectedIndex = parseInt(this.dataset.index, 10);
-                        const isLast = selectedIndex === options.length - 1;
-                        if (isLast) {
-                            customWrapper.classList.add('visible');
-                        } else {
-                            customWrapper.classList.remove('visible');
-                        }
-                        updateNextEnabled();
-                    });
-                });
-
-                if (customInput) {
-                    customInput.addEventListener('input', updateNextEnabled);
-                }
-            } else {
-                const answerInput = document.getElementById('target-question-answer-input');
-                answerInput.addEventListener('input', function() {
-                    nextBtn.disabled = !this.value.trim();
-                });
-            }
-
-            async function submitTargetAnswerAndLoadNext(answer) {
-                state.targetPreferenceHistory.push({
-                    question: questionText,
-                    answer: answer || ''
-                });
-                try {
-                    const loading = document.getElementById('target-questionnaire-loading');
-                    loading.classList.add('visible');
-                    const response = await fetch('/api/next-target-question', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            purpose: getPurposeText(),
-                            field: getTargetFieldFromPreferences() || getFieldText(),
-                            sender_profile: state.senderProfile,
-                            history: state.targetPreferenceHistory,
-                            max_questions: 5
-                        })
-                    });
-                    const data = await response.json();
-                    loading.classList.remove('visible');
-                    if (data.success) {
-                        renderNextTargetQuestion(data);
-                    } else {
-                        throw new Error(data.error || 'Failed to load next preference question');
-                    }
-                } catch (error) {
-                    const loading = document.getElementById('target-questionnaire-loading');
-                    loading.classList.remove('visible');
-                    console.error('Error loading next preference question:', error);
-                }
-            }
-
-            nextBtn.addEventListener('click', function() {
-                let answer = '';
-                if (options && options.length > 0) {
-                    if (selectedIndex === null) return;
-                    const isLast = selectedIndex === options.length - 1;
-                    if (isLast) {
-                        const customInput = document.getElementById('target-question-custom-input');
-                        if (!customInput.value.trim()) return;
-                        answer = customInput.value.trim();
-                    } else {
-                        answer = options[selectedIndex];
-                    }
-                } else {
-                    const answerInput = document.getElementById('target-question-answer-input');
-                    answer = (answerInput.value || '').trim();
-                    if (!answer) return;
-                }
-                submitTargetAnswerAndLoadNext(answer);
-            });
-
-            skipBtn.addEventListener('click', function() {
-                submitTargetAnswerAndLoadNext('');
-            });
+            // Question flow removed; keep stub for compatibility.
+            return;
         }
 
-        // Load recommendations
+// Load recommendations
         async function loadRecommendations() {
             const list = document.getElementById('recommendation-list');
             const loading = document.getElementById('rec-loading');
@@ -4450,14 +3606,9 @@ I&apos;m {{sender_name}}, currently ...
             actions.style.display = 'none';
             document.getElementById('recommendation-section').classList.remove('hidden');
             
-            try {
+            async function fetchAiRecommendations() {
                 const purposeText = getPurposeText();
                 const fieldText = getTargetFieldFromPreferences() || getFieldText();
-                const prefHistory = state.targetPreferenceHistory || [];
-                const prefExtra = prefHistory.length > 0
-                    ? prefHistory.map((qa, idx) => `Q${idx + 1}: ${qa.question}\nA${idx + 1}: ${qa.answer}`).join('\n\n')
-                    : '';
-                
                 const response = await fetch('/api/find-recommendations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -4466,7 +3617,6 @@ I&apos;m {{sender_name}}, currently ...
                         field: fieldText,
                         sender_profile: state.senderProfile,
                         preferences: {
-                            extra: prefExtra,
                             search_intent: (state.targetSearchIntent || '').trim(),
                             must_have: (state.targetMustHave || '').trim(),
                             must_not: (state.targetMustNot || '').trim(),
@@ -4477,14 +3627,38 @@ I&apos;m {{sender_name}}, currently ...
                         }
                     })
                 });
-                
-                const data = await response.json();
-                
+                return response.json();
+            }
+
+            try {
+                let data;
+                const hasInstitutions = state.selectedInstitutions && state.selectedInstitutions.length > 0;
+                if (hasInstitutions) {
+                    const response = await fetch('/api/scrape-advisors', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            institutions: state.selectedInstitutions,
+                            limit: 20
+                        })
+                    });
+                    data = await response.json();
+                    if (!data.success || !data.advisors || data.advisors.length === 0) {
+                        // Fallback to AI recommendations
+                        data = await fetchAiRecommendations();
+                    }
+                } else {
+                    data = await fetchAiRecommendations();
+                }
+
                 if (data.success) {
                     loading.classList.remove('visible');
                     actions.style.display = 'flex';
-                    state.recommendations = data.recommendations;
-                    renderRecommendations(data.recommendations);
+                    state.recommendations = data.advisors || data.recommendations || [];
+                    if (!state.recommendations.length) {
+                        throw new Error('No advisors found');
+                    }
+                    renderRecommendations(state.recommendations);
                 } else {
                     throw new Error(data.error || 'Failed to find recommendations');
                 }
@@ -4498,8 +3672,34 @@ I&apos;m {{sender_name}}, currently ...
         function renderRecommendations(recommendations) {
             const list = document.getElementById('recommendation-list');
             list.innerHTML = '';
-            
-            recommendations.forEach((rec, index) => {
+
+            // Frontend dedupe: prefer the first occurrence for a given source_url or name+email
+            const deduped = [];
+            const seen = new Set();
+
+            // Heuristic: filter out entries whose names don't look like person names
+            function isLikelyPersonName(name) {
+                const n = (name || '').trim();
+                if (!n) return false;
+                // Reject if contains digits or is too short/too long
+                if (/[0-9]/.test(n) || n.length < 2 || n.length > 80) return false;
+                // Reject common non-person labels
+                const lower = n.toLowerCase();
+                const badTokens = ["people", "faculty", "staff", "office", "department", "center", "lab", "research", "committee"];
+                if (badTokens.some(t => lower.includes(t))) return false;
+                // Require at least one space or capitalized word (to avoid single words like "AI")
+                return /\s/.test(n) || /^[A-Z][a-z.'-]{2,}$/.test(n);
+            }
+
+            recommendations.forEach((rec) => {
+                const key = rec.source_url || `${rec.name || ''}|${rec.email || ''}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                if (!isLikelyPersonName(rec.name)) return;
+                deduped.push(rec);
+            });
+
+            deduped.forEach((rec, index) => {
                 const item = document.createElement('div');
                 item.className = 'recommendation-item';
                 item.dataset.index = index;
@@ -4510,12 +3710,19 @@ I&apos;m {{sender_name}}, currently ...
                 
                 const matchClass = rec.match_score >= 80 ? 'high' : (rec.match_score >= 60 ? 'medium' : 'low');
                 
+                const avatar = (rec.name || '?').trim().charAt(0) || '?';
+                const position = rec.position || rec.title || rec.field || '-';
+                const research = rec.research || '-';
+                const email = rec.email || '-';
+
                 item.innerHTML = `
-                    <div class="rec-checkbox">${isSelected ? '✓' : ''}</div>
-                    <div class="rec-avatar">${rec.name.charAt(0)}</div>
+                    <div class="rec-checkbox">${isSelected ? '?' : ''}</div>
+                    <div class="rec-avatar">${avatar}</div>
                     <div class="rec-info">
                         <div class="rec-name">${rec.name}</div>
-                        <div class="rec-field">${rec.position || rec.field}</div>
+                        <div class="rec-field">${position}</div>
+                        <div class="rec-field" style="color:#4a5568;">🔬 ${research}</div>
+                        <div class="rec-field" style="color:#4a5568;">📧 ${email}</div>
                     </div>
                     <button class="view-profile-btn" onclick="event.stopPropagation(); openProfileModal(${index})">📋 View</button>
                     <div class="rec-match ${matchClass}">${rec.match_score}% Match</div>
@@ -4602,21 +3809,33 @@ I&apos;m {{sender_name}}, currently ...
 
         // Setup navigation buttons
         function setupNavigationButtons() {
+            // Step 1 Back -> Mode selection (mainly for Quick Start)
+            document.getElementById('btn-step1-back').addEventListener('click', function() {
+                resetFormsAndPanels(state.mode || 'quick');
+                resetRecommendationState();
+                Object.assign(state, getFreshState(null));
+                updateModeSwitcherUI(null);
+                const modeSelection = document.getElementById('mode-selection');
+                if (modeSelection) modeSelection.classList.remove('hidden');
+                const modeNextBtn = document.getElementById('btn-mode-next');
+                if (modeNextBtn) modeNextBtn.disabled = true;
+            });
+
             // Step 1 -> Step 2
             document.getElementById('btn-step1-next').addEventListener('click', function() {
                 goToStep(2);
                 
                 // For Quick Start mode, auto-configure Step 2
                 if (state.mode === 'quick') {
-                    // Hide resume choice section (Quick Start uses optional inputs)
-                    document.getElementById('resume-choice-section').classList.add('hidden');
-                    // Show quick start notice
-                    document.getElementById('quick-start-notice').classList.remove('hidden');
-                    // Show optional resume upload (Quick Start only)
-                    document.getElementById('resume-upload-section').classList.remove('hidden');
+                    const quickNotice = document.getElementById('quick-start-notice');
+                    if (quickNotice) quickNotice.classList.remove('hidden');
                     // Show questionnaire only if no other context is provided
                     updateQuickStartQuestionnaireVisibility();
+                } else {
+                    const quickNotice = document.getElementById('quick-start-notice');
+                    if (quickNotice) quickNotice.classList.add('hidden');
                 }
+                checkStep2Valid();
             });
 
             // Step 2 Back
@@ -4626,13 +3845,9 @@ I&apos;m {{sender_name}}, currently ...
 
             // Step 2 -> Step 3
             document.getElementById('btn-step2-next').addEventListener('click', async function() {
-                if (state.mode === 'quick') {
-                    await ensureQuickStartSenderProfile();
-                } else if (!state.hasResume && state.questionnaireHistory.length > 0) {
-                    // Build profile from questionnaire
-                    await buildProfileFromQuestionnaire();
-                }
+                await ensureSenderProfileFromContext();
                 goToStep(3);
+                loadInstitutionRecommendations();
                 
                 // For Quick Start mode, hide document upload in Step 3
                 if (state.mode === 'quick') {
@@ -4825,9 +4040,7 @@ I&apos;m {{sender_name}}, currently ...
             });
         }
 
-        async function ensureQuickStartSenderProfile() {
-            if (state.mode !== 'quick') return;
-
+        async function ensureSenderProfileFromContext() {
             if (state.senderProfile) return;
 
             const link = (state.senderProfileLink || '').trim();
@@ -4862,27 +4075,10 @@ I&apos;m {{sender_name}}, currently ...
             const progress = document.getElementById('email-progress');
             
             loading.classList.add('visible');
-            result.classList.remove('hidden');
             result.classList.add('hidden');
             nav.classList.add('hidden');
             state.generatedEmails = [];
             state.currentEmailIndex = 0;
-            
-            // 保存用户选择的 targets
-            if (state.selectedTargets && state.selectedTargets.length > 0) {
-                try {
-                    await fetch('/api/save-targets', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            session_id: state.sessionId || 'default',
-                            targets: state.selectedTargets
-                        })
-                    });
-                } catch (e) {
-                    console.log('Failed to save targets:', e);
-                }
-            }
             
             try {
                 const templateInput = document.getElementById('email-template');
@@ -5381,6 +4577,8 @@ I&apos;m {{sender_name}}, currently ...
         function resetRecommendationState() {
             state.recommendations = [];
             state.selectedTargets = [];
+            state.selectedInstitutions = [];
+            state.institutionCandidates = [];
             updateSelectedTargetsUI();
             
             const list = document.getElementById('recommendation-list');
@@ -5391,6 +4589,10 @@ I&apos;m {{sender_name}}, currently ...
             if (actions) actions.style.display = 'none';
             if (loading) loading.classList.remove('visible');
             if (details) details.classList.remove('visible');
+            const instList = document.getElementById('institution-list');
+            if (instList) instList.innerHTML = '';
+            const instError = document.getElementById('institution-error');
+            if (instError) instError.style.display = 'none';
             checkStep3Valid();
         }
 
@@ -5408,24 +4610,17 @@ I&apos;m {{sender_name}}, currently ...
         }
 
         function checkStep2Valid() {
-            let valid = false;
-            if (state.hasResume && state.senderProfile) {
-                valid = true;
-            } else if (state.mode === 'quick') {
-                const hasQuickContext = Boolean(state.senderProfile)
-                    || Boolean((state.senderProfileLink || '').trim())
-                    || Boolean((state.senderProfileExtra || '').trim());
-                if (hasQuickContext) {
-                    valid = true;
-                } else {
-                    valid = Boolean(state.quickQuestionsEnabled)
-                        && Array.isArray(state.questionnaireHistory)
-                        && state.questionnaireHistory.some(qa => (qa.answer || '').trim().length > 0);
-                }
-            } else if (!state.hasResume) {
-                // For questionnaires: require at least one non-empty answer
-                valid = Array.isArray(state.questionnaireHistory)
-                    && state.questionnaireHistory.some(qa => (qa.answer || '').trim().length > 0);
+            const hasProfile = Boolean(state.senderProfile);
+            const hasLink = Boolean((state.senderProfileLink || '').trim());
+            const hasExtra = Boolean((state.senderProfileExtra || '').trim());
+            const hasContext = hasProfile || hasLink || hasExtra;
+            const hasAnswers = Array.isArray(state.questionnaireHistory)
+                && state.questionnaireHistory.some(qa => (qa.answer || '').trim().length > 0);
+
+            let valid = hasContext || hasAnswers;
+
+            if (state.mode === 'quick') {
+                valid = hasContext || (state.quickQuestionsEnabled && hasAnswers);
             }
             document.getElementById('btn-step2-next').disabled = !valid;
         }

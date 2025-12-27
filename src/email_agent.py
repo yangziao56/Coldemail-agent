@@ -19,14 +19,6 @@ from config import (
     USE_OPENAI_RECOMMENDATIONS,
 )
 
-# Prompt 数据收集 (可选)
-try:
-    from src.services.prompt_collector import prompt_collector
-    PROMPT_COLLECTOR_AVAILABLE = True
-except ImportError:
-    PROMPT_COLLECTOR_AVAILABLE = False
-    prompt_collector = None
-
 
 @dataclass
 class ProfileBase:
@@ -453,7 +445,6 @@ def generate_email(
     *,
     model: str = DEFAULT_MODEL,
     template: str | None = None,
-    session_id: str | None = None,  # 用于数据收集
 ) -> str:
     messages = build_prompt(sender, receiver, goal, template=template)
     
@@ -463,18 +454,7 @@ def generate_email(
     prompt = f"System instruction: {system_content}\n\nUser request:\n{user_content}"
     
     content = _call_gemini(prompt, model=model)
-    result = content.strip()
-    
-    # 收集 prompt 数据
-    if PROMPT_COLLECTOR_AVAILABLE and prompt_collector and session_id:
-        prompt_collector.record_generate_email(
-            session_id=session_id,
-            prompt=prompt,
-            output=result,
-            metadata={"model": model, "goal": goal}
-        )
-    
-    return result
+    return content.strip()
 
 
 def generate_questionnaire(purpose: str, field: str, *, model: str = DEFAULT_MODEL) -> list[dict]:
@@ -1117,8 +1097,7 @@ def find_target_recommendations(
     preferences: dict | None = None,
     *,
     model: str = DEFAULT_MODEL,
-    count: int = 10,
-    session_id: str | None = None,  # 用于数据收集
+    count: int = 10
 ) -> list[dict]:
     """
     Find recommended target contacts based on user's purpose, field, and profile.
@@ -1130,17 +1109,12 @@ def find_target_recommendations(
         model: Gemini model to use
         count: Number of recommendations to generate
         preferences: Optional targeting preferences (seniority, org type, outreach goal, prominence)
-        session_id: Optional session ID for prompt data collection
         
     Returns:
         List of recommendation dictionaries
     """
     pref_context = _build_preference_context(preferences)
     profile_context = _build_sender_context(sender_profile)
-    
-    # 用于数据收集的变量
-    collected_prompt = ""
-    collected_output = ""
 
     # Primary: Gemini with Google Search grounding (fast and reliable)
     if USE_GEMINI_SEARCH:
@@ -1165,24 +1139,11 @@ def find_target_recommendations(
                 "Do not make up names - only include people you can verify through search."
             )
             content = _call_gemini_with_search(search_prompt, model=GEMINI_SEARCH_MODEL, json_mode=True)
-            
-            # 收集数据
-            collected_prompt = search_prompt
-            collected_output = content
-            
             raw_items = json.loads(content).get("recommendations", [])
             recommendations = _normalize_recommendations(raw_items)
             recommendations.sort(key=lambda x: _safe_int(x.get("match_score", 0), default=0), reverse=True)
             if recommendations:
                 print(f"Gemini Search found {len(recommendations)} recommendations")
-                # 保存收集的数据
-                if PROMPT_COLLECTOR_AVAILABLE and prompt_collector and session_id:
-                    prompt_collector.record_find_target(
-                        session_id=session_id,
-                        prompt=collected_prompt,
-                        output=collected_output,
-                        metadata={"model": GEMINI_SEARCH_MODEL, "method": "gemini_search", "count": len(recommendations)}
-                    )
                 return recommendations[:count]
         except Exception as e:
             print(f"Gemini Search recommendation error: {e}")
@@ -1190,33 +1151,22 @@ def find_target_recommendations(
     # Fallback 1: OpenAI (gpt-5.1) with built-in web_search tool - DISABLED by default
     if USE_OPENAI_WEB_SEARCH and USE_OPENAI_RECOMMENDATIONS:
         try:
-            fallback_prompt = _build_recommendation_prompt(
-                purpose=purpose,
-                field=field,
-                profile_context=profile_context,
-                pref_context=pref_context,
-                count=count,
-                include_web_section=False,
-                require_tool_use=True,
+            content = _call_openai_json_with_web_search(
+                _build_recommendation_prompt(
+                    purpose=purpose,
+                    field=field,
+                    profile_context=profile_context,
+                    pref_context=pref_context,
+                    count=count,
+                    include_web_section=False,
+                    require_tool_use=True,
+                ),
+                model=RECOMMENDATION_MODEL,
             )
-            content = _call_openai_json_with_web_search(fallback_prompt, model=RECOMMENDATION_MODEL)
-            
-            # 收集数据
-            collected_prompt = fallback_prompt
-            collected_output = content
-            
             raw_items = json.loads(content).get("recommendations", [])
             recommendations = _normalize_recommendations(raw_items)
             recommendations.sort(key=lambda x: _safe_int(x.get("match_score", 0), default=0), reverse=True)
             if recommendations:
-                # 保存收集的数据
-                if PROMPT_COLLECTOR_AVAILABLE and prompt_collector and session_id:
-                    prompt_collector.record_find_target(
-                        session_id=session_id,
-                        prompt=collected_prompt,
-                        output=collected_output,
-                        metadata={"model": RECOMMENDATION_MODEL, "method": "openai_web_search", "count": len(recommendations)}
-                    )
                 return recommendations[:count]
         except Exception as e:
             print(f"OpenAI recommendation (web_search) error: {e}")
@@ -1251,19 +1201,18 @@ def find_target_recommendations(
     try:
         web_text, web_sources = _gather_recommendation_web_context(field, purpose, preferences, max_pages=1)
         if web_text or web_sources:
-            fallback_prompt = _build_recommendation_prompt(
-                purpose=purpose,
-                field=field,
-                profile_context=profile_context,
-                pref_context=pref_context,
-                count=count,
-                web_text=web_text,
-                sources=web_sources,
-                include_web_section=True,
-                require_tool_use=False,
-            )
             content = _call_gemini(
-                fallback_prompt,
+                _build_recommendation_prompt(
+                    purpose=purpose,
+                    field=field,
+                    profile_context=profile_context,
+                    pref_context=pref_context,
+                    count=count,
+                    web_text=web_text,
+                    sources=web_sources,
+                    include_web_section=True,
+                    require_tool_use=False,
+                ),
                 model=model,
                 json_mode=True,
             )
@@ -1271,14 +1220,6 @@ def find_target_recommendations(
             recommendations = _normalize_recommendations(raw_items)
             recommendations.sort(key=lambda x: _safe_int(x.get("match_score", 0), default=0), reverse=True)
             if recommendations:
-                # 保存收集的数据（scrape + Gemini fallback）
-                if PROMPT_COLLECTOR_AVAILABLE and prompt_collector and session_id:
-                    prompt_collector.record_find_target(
-                        session_id=session_id,
-                        prompt=fallback_prompt,
-                        output=content,
-                        metadata={"model": model, "method": "gemini_scrape_fallback", "count": len(recommendations)}
-                    )
                 return recommendations[:count]
     except Exception as e:
         print(f"Gemini recommendation (scrape fallback) error: {e}")
@@ -1301,14 +1242,6 @@ def find_target_recommendations(
         recommendations = _normalize_recommendations(raw_items)
         recommendations.sort(key=lambda x: _safe_int(x.get("match_score", 0), default=0), reverse=True)
         if recommendations:
-            # 保存收集的数据（default fallback）
-            if PROMPT_COLLECTOR_AVAILABLE and prompt_collector and session_id:
-                prompt_collector.record_find_target(
-                    session_id=session_id,
-                    prompt=prompt,
-                    output=content,
-                    metadata={"model": model, "method": "gemini_text_only", "count": len(recommendations)}
-                )
             return recommendations[:count]
     except json.JSONDecodeError:
         pass
