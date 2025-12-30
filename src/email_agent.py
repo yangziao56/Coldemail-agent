@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import google.generativeai as genai
+from google import genai as genai_new  # New google-genai package for search
+from google.genai import types as genai_types
 from openai import OpenAI
 from PyPDF2 import PdfReader
 
@@ -26,7 +28,6 @@ try:
 except ImportError:
     PROMPT_COLLECTOR_AVAILABLE = False
     prompt_collector = None
-
 
 @dataclass
 class ProfileBase:
@@ -205,6 +206,68 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
     return cleaned
 
 
+def _validate_linkedin_url(url: str | None, grounding_urls: list[str] | None = None) -> str | None:
+    """
+    Validate a LinkedIn URL format.
+    
+    Note: We cannot verify if the URL actually exists without making an HTTP request.
+    This function only validates the URL format and filters obviously fake patterns.
+    
+    Args:
+        url: The URL to validate
+        grounding_urls: Not used anymore (kept for compatibility)
+        
+    Returns:
+        The validated URL if it looks legitimate, None otherwise
+    """
+    if not url or not isinstance(url, str):
+        return None
+    
+    url = url.strip()
+    
+    # Must be a LinkedIn URL (personal profile or company)
+    valid_prefixes = [
+        "https://www.linkedin.com/in/",
+        "https://linkedin.com/in/",
+        "https://www.linkedin.com/company/",
+        "https://linkedin.com/company/",
+    ]
+    if not any(url.startswith(prefix) for prefix in valid_prefixes):
+        return None
+    
+    # Extract the profile ID/slug
+    try:
+        if '/in/' in url:
+            parts = url.rstrip('/').split('/in/')
+            if len(parts) != 2:
+                return None
+            profile_slug = parts[1].split('/')[0].split('?')[0]
+        elif '/company/' in url:
+            parts = url.rstrip('/').split('/company/')
+            if len(parts) != 2:
+                return None
+            profile_slug = parts[1].split('/')[0].split('?')[0]
+        else:
+            return None
+        
+        # Profile slug should be reasonable (not empty, not too short)
+        if not profile_slug or len(profile_slug) < 2:
+            return None
+        
+        # Check for obviously fake patterns
+        fake_patterns = ['example', 'sample', 'test', 'fake', 'placeholder', 'xxx', 'yyy', 'abc123', 'user123']
+        if any(pattern in profile_slug.lower() for pattern in fake_patterns):
+            print(f"[LinkedIn] Filtered fake pattern URL: {url}")
+            return None
+            
+    except Exception:
+        return None
+    
+    # Note: We no longer check grounding_urls because Google returns redirect URLs
+    # that don't contain the actual LinkedIn URLs
+    return url
+
+
 def _profile_from_dict(profile_data: dict[str, Any], *, raw_text: str) -> ProfileBase:
     return ProfileBase(
         name=_require_field(profile_data, "name", "extracted profile"),
@@ -242,29 +305,121 @@ def _call_gemini(prompt: str, *, model: str = DEFAULT_MODEL, json_mode: bool = F
     return response.text
 
 
-def _call_gemini_with_search(prompt: str, *, model: str = GEMINI_SEARCH_MODEL, json_mode: bool = False) -> str:
+def _extract_json_from_text(text: str) -> str:
     """
-    Call Gemini API with Google Search grounding enabled.
+    Extract JSON from text that may contain markdown code blocks or other content.
+    """
+    import re
+    
+    # Try to find JSON in markdown code blocks
+    json_block_pattern = r'```(?:json)?\s*\n?([\s\S]*?)\n?```'
+    matches = re.findall(json_block_pattern, text)
+    if matches:
+        for match in matches:
+            try:
+                json.loads(match.strip())
+                return match.strip()
+            except json.JSONDecodeError:
+                continue
+    
+    # Try to find raw JSON object
+    # Look for outermost { ... }
+    brace_start = text.find('{')
+    if brace_start != -1:
+        depth = 0
+        for i, char in enumerate(text[brace_start:], brace_start):
+            if char == '{':
+                depth += 1
+            elif char == '}':
+                depth -= 1
+                if depth == 0:
+                    try:
+                        candidate = text[brace_start:i+1]
+                        json.loads(candidate)
+                        return candidate
+                    except json.JSONDecodeError:
+                        continue
+    
+    # Return original text if no JSON found
+    return text
+
+
+def _call_gemini_with_search(prompt: str, *, model: str = GEMINI_SEARCH_MODEL, json_mode: bool = False, return_grounding_urls: bool = False) -> str | tuple[str, list[str]]:
+    """
+    Call Gemini API with Google Search grounding enabled using the new google-genai package.
     This allows the model to search the web for real-time information.
+    
+    NOTE: Google Search grounding does NOT support JSON mode, so we always use text mode
+    and manually extract JSON from the response.
+    
+    Args:
+        prompt: The prompt to send
+        model: The model to use
+        json_mode: Whether the response should be JSON (we'll extract it manually)
+        return_grounding_urls: If True, also return list of grounding source URLs
+    
+    Returns:
+        If return_grounding_urls is False: response text
+        If return_grounding_urls is True: tuple of (response text, list of grounding URLs)
     """
-    _configure_gemini()
+    # Use new google-genai package for search capability
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY environment variable is required")
     
-    generation_config = {}
-    if json_mode:
-        generation_config["response_mime_type"] = "application/json"
+    client = genai_new.Client(api_key=api_key)
     
-    # Enable Google Search grounding
-    gemini_model = genai.GenerativeModel(
-        model,
-        generation_config=generation_config or None,
-        tools="google_search_retrieval"
+    # Create GoogleSearch tool
+    google_search_tool = genai_types.Tool(
+        google_search=genai_types.GoogleSearch()
     )
     
-    response = gemini_model.generate_content(prompt)
+    # Generate content with search
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=genai_types.GenerateContentConfig(
+            tools=[google_search_tool]
+        )
+    )
     
     if not response.text:
         raise RuntimeError("Gemini response with search did not contain any content")
-    return response.text
+    
+    # Extract JSON if requested
+    result_text = response.text
+    if json_mode:
+        result_text = _extract_json_from_text(response.text)
+    
+    if return_grounding_urls:
+        grounding_urls = []
+        try:
+            # Extract grounding metadata from response (new API structure)
+            if hasattr(response, 'candidates') and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'grounding_metadata') and candidate.grounding_metadata:
+                    metadata = candidate.grounding_metadata
+                    # Try to get grounding chunks/sources
+                    if hasattr(metadata, 'grounding_chunks') and metadata.grounding_chunks:
+                        for chunk in metadata.grounding_chunks:
+                            if hasattr(chunk, 'web') and chunk.web:
+                                if hasattr(chunk.web, 'uri') and chunk.web.uri:
+                                    grounding_urls.append(chunk.web.uri)
+                    # Try grounding_supports
+                    if hasattr(metadata, 'grounding_supports') and metadata.grounding_supports:
+                        for support in metadata.grounding_supports:
+                            if hasattr(support, 'grounding_chunk_indices'):
+                                pass  # These reference the chunks above
+                    # Try web_search_queries to see what was searched
+                    if hasattr(metadata, 'web_search_queries') and metadata.web_search_queries:
+                        print(f"[Grounding] Search queries: {metadata.web_search_queries}")
+        except Exception as e:
+            print(f"[Grounding] Could not extract grounding URLs: {e}")
+        
+        print(f"[Grounding] Found {len(grounding_urls)} source URLs from search")
+        return result_text, grounding_urls
+    
+    return result_text
 
 
 def _get_openai_client() -> OpenAI:
@@ -980,6 +1135,7 @@ Return a JSON object with key "recommendations" containing a list of {count} peo
 - name (string)
 - position (string)
 - field (string)
+- linkedin_url (string, the person's LinkedIn profile URL if found, e.g., "https://www.linkedin.com/in/username")
 - match_score (integer 60-95)
 - match_reason (short string)
 - common_interests (short string)
@@ -987,7 +1143,9 @@ Return a JSON object with key "recommendations" containing a list of {count} peo
 - sources (list of URLs; can be empty only if you explicitly set uncertainty to high)
 - uncertainty (string: low, medium, or high, plus a short reason if needed)
 
-Return up to {count} people. Prefer candidates you can verify with evidence. If you cannot find at least one credible source URL for a person, either omit them or mark uncertainty as high and keep claims minimal.
+IMPORTANT: Prioritize finding LinkedIn profiles. Search "[name] [company] LinkedIn" to find their LinkedIn URL.
+Return up to {count} people. Prefer candidates you can verify with evidence and have LinkedIn profiles.
+If you cannot find at least one credible source URL for a person, either omit them or mark uncertainty as high and keep claims minimal.
 Rank candidates by: fit to purpose/field/preferences, likely contactability (if specified), and strength of evidence.
 Be diverse and mix accessible profiles, not only famous leaders.
 Return JSON only."""
@@ -1000,7 +1158,37 @@ def _safe_int(value: Any, *, default: int = 0) -> int:
         return default
 
 
-def _normalize_recommendations(items: Any) -> list[dict[str, Any]]:
+def _generate_linkedin_search_url(name: str, company: str = "") -> str:
+    """
+    Generate a LinkedIn search URL for a person.
+    This is more reliable than trying to guess their profile URL.
+    
+    Args:
+        name: Person's full name
+        company: Optional company name for better search results
+        
+    Returns:
+        LinkedIn search URL
+    """
+    import urllib.parse
+    search_query = name
+    if company:
+        search_query = f"{name} {company}"
+    encoded_query = urllib.parse.quote(search_query)
+    return f"https://www.linkedin.com/search/results/people/?keywords={encoded_query}"
+
+
+def _normalize_recommendations(items: Any, grounding_urls: list[str] | None = None) -> list[dict[str, Any]]:
+    """
+    Normalize recommendation items into a consistent format.
+    
+    Args:
+        items: List of raw recommendation items
+        grounding_urls: Optional list of URLs from Gemini grounding (not used anymore)
+        
+    Returns:
+        List of normalized recommendation dictionaries
+    """
     if not isinstance(items, list):
         return []
 
@@ -1036,11 +1224,38 @@ def _normalize_recommendations(items: Any) -> list[dict[str, Any]]:
         elif isinstance(evidence_value, str) and evidence_value.strip():
             evidence = [evidence_value.strip()]
 
+        # Check if model provided a LinkedIn URL (we'll validate it)
+        linkedin_url_raw = str(item.get("linkedin_url", "") or "").strip()
+        
+        # Also check sources for LinkedIn URLs
+        if not linkedin_url_raw:
+            for src in sources:
+                if "linkedin.com/in/" in src.lower():
+                    linkedin_url_raw = src
+                    break
+        
+        # Validate the LinkedIn URL format
+        linkedin_url = _validate_linkedin_url(linkedin_url_raw)
+        
+        # If no valid LinkedIn URL, generate a search URL instead
+        # This ensures users can always find the person on LinkedIn
+        if not linkedin_url:
+            # Extract company from position if available
+            company = ""
+            if position:
+                # Try to extract company name from position (e.g., "VP at Goldman Sachs")
+                for keyword in ["at ", "@ ", ", "]:
+                    if keyword in position:
+                        company = position.split(keyword)[-1].strip()
+                        break
+            linkedin_url = _generate_linkedin_search_url(name, company)
+
         normalized.append(
             {
                 "name": name,
                 "position": position or field,
                 "field": field or position,
+                "linkedin_url": linkedin_url,  # Either validated profile URL or search URL
                 "match_score": match_score or 70,
                 "match_reason": match_reason,
                 "common_interests": common_interests,
@@ -1155,23 +1370,34 @@ def find_target_recommendations(
                 sources=[],
                 include_web_section=False,
             )
-            # Add instruction for real-time search
+            # Add instruction for real-time search - DO NOT ask for LinkedIn URLs
+            # because the model will fabricate them instead of finding real ones
             search_prompt = (
                 f"{prompt}\n\n"
-                "IMPORTANT: Use Google Search to find REAL people who are currently active in this field. "
-                "Search for recent faculty, researchers, professionals, or industry leaders. "
-                "Include their actual current positions and affiliations. "
-                "For each person, include evidence and source URLs from what you found. "
-                "Do not make up names - only include people you can verify through search."
+                "CRITICAL SEARCH INSTRUCTIONS:\n"
+                "1. Use Google Search to find REAL professionals currently working in this field.\n"
+                "2. Search for each person to verify they actually exist and work at the company.\n"
+                "3. DO NOT include linkedin_url - leave it as empty string. Users will search LinkedIn themselves.\n"
+                "4. Include the sources field with actual news/company/article URLs where you found information.\n"
+                "5. Focus on finding people with verifiable public information (news articles, company pages, etc.).\n"
+                "6. For Finance/Banking, search for professionals at major institutions like Goldman Sachs, Morgan Stanley, JPMorgan, BlackRock, etc.\n"
+                "\n"
+                "IMPORTANT: Only include people you can verify exist. Each person MUST have evidence from search results.\n"
+                "DO NOT make up or guess LinkedIn profile URLs - the linkedin_url field should always be empty string."
             )
-            content = _call_gemini_with_search(search_prompt, model=GEMINI_SEARCH_MODEL, json_mode=True)
+            # Get response with grounding URLs for logging
+            result = _call_gemini_with_search(search_prompt, model=GEMINI_SEARCH_MODEL, json_mode=True, return_grounding_urls=True)
+            content, grounding_urls = result
+            
+            print(f"[Search] Retrieved {len(grounding_urls)} grounding source URLs")
             
             # 收集数据
             collected_prompt = search_prompt
             collected_output = content
             
             raw_items = json.loads(content).get("recommendations", [])
-            recommendations = _normalize_recommendations(raw_items)
+            # Normalize and generate LinkedIn search URLs (not profile URLs)
+            recommendations = _normalize_recommendations(raw_items, grounding_urls=grounding_urls)
             recommendations.sort(key=lambda x: _safe_int(x.get("match_score", 0), default=0), reverse=True)
             if recommendations:
                 print(f"Gemini Search found {len(recommendations)} recommendations")

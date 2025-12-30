@@ -747,6 +747,23 @@
             font-weight: 600;
             color: var(--text-bright);
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .linkedin-link {
+            color: #0a66c2;
+            display: inline-flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            opacity: 0.8;
+        }
+
+        .linkedin-link:hover {
+            color: #004182;
+            opacity: 1;
+            transform: scale(1.1);
         }
 
         .rec-field {
@@ -2206,6 +2223,13 @@ I&apos;m {{sender_name}}, currently ...
             <div class="profile-section">
                 <h4>🎯 Position</h4>
                 <p id="modal-position">-</p>
+            </div>
+            <div class="profile-section" id="modal-linkedin-section" style="display: none;">
+                <h4>🔗 LinkedIn Profile</h4>
+                <p><a id="modal-linkedin-url" href="#" target="_blank" style="color: #0a66c2; display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                    <span id="modal-linkedin-text">View Profile</span>
+                </a></p>
             </div>
             <div class="profile-section">
                 <h4>📊 Match Score</h4>
@@ -3784,6 +3808,19 @@ I&apos;m {{sender_name}}, currently ...
             
             document.getElementById('modal-target-name').textContent = rec.name;
             document.getElementById('modal-position').textContent = rec.position || rec.field || '-';
+            
+            // Show LinkedIn URL if available
+            const linkedinSection = document.getElementById('modal-linkedin-section');
+            const linkedinUrl = document.getElementById('modal-linkedin-url');
+            const linkedinText = document.getElementById('modal-linkedin-text');
+            if (rec.linkedin_url) {
+                linkedinSection.style.display = 'block';
+                linkedinUrl.href = rec.linkedin_url;
+                linkedinText.textContent = rec.linkedin_url;
+            } else {
+                linkedinSection.style.display = 'none';
+            }
+            
             document.getElementById('modal-match-score').innerHTML = `<span style="color: ${rec.match_score >= 80 ? '#28a745' : rec.match_score >= 60 ? '#ffc107' : '#dc3545'}; font-weight: bold;">${rec.match_score}%</span> compatibility`;
             document.getElementById('modal-match-reason').textContent = rec.match_reason || '-';
             document.getElementById('modal-uncertainty').textContent = rec.uncertainty || '-';
@@ -4510,11 +4547,23 @@ I&apos;m {{sender_name}}, currently ...
                 
                 const matchClass = rec.match_score >= 80 ? 'high' : (rec.match_score >= 60 ? 'medium' : 'low');
                 
+                // LinkedIn link - detect if it's a search URL or direct profile URL
+                let linkedinHtml = '';
+                if (rec.linkedin_url) {
+                    const isSearchUrl = rec.linkedin_url.includes('/search/results/');
+                    const title = isSearchUrl ? 'Search on LinkedIn' : 'View LinkedIn Profile';
+                    const iconColor = isSearchUrl ? '#0077b5' : 'currentColor';
+                    linkedinHtml = `<a href="${rec.linkedin_url}" target="_blank" onclick="event.stopPropagation();" class="linkedin-link ${isSearchUrl ? 'search-link' : ''}" title="${title}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="${iconColor}"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                        ${isSearchUrl ? '🔍' : ''}
+                    </a>`;
+                }
+                
                 item.innerHTML = `
                     <div class="rec-checkbox">${isSelected ? '✓' : ''}</div>
                     <div class="rec-avatar">${rec.name.charAt(0)}</div>
                     <div class="rec-info">
-                        <div class="rec-name">${rec.name}</div>
+                        <div class="rec-name">${rec.name} ${linkedinHtml}</div>
                         <div class="rec-field">${rec.position || rec.field}</div>
                     </div>
                     <button class="view-profile-btn" onclick="event.stopPropagation(); openProfileModal(${index})">📋 View</button>
@@ -4522,7 +4571,7 @@ I&apos;m {{sender_name}}, currently ...
                 `;
                 
                 item.addEventListener('click', function(e) {
-                    if (!e.target.classList.contains('view-profile-btn')) {
+                    if (!e.target.classList.contains('view-profile-btn') && !e.target.closest('.linkedin-link')) {
                         toggleRecommendation(index);
                     }
                 });

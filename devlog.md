@@ -1,5 +1,78 @@
 # Development Log
 
+## 2025-12-31: LinkedIn URL 生成策略优化
+
+### 问题
+- AI 模型（Gemini）会根据人名**编造** LinkedIn 个人主页 URL（如生成 `emilycartermergers`），而实际正确的是 `emilyacarter`
+- 用户点击后会看到 "页面不存在" 错误
+- Google Search grounding 返回的是重定向 URL（`vertexaisearch.cloud.google.com`），无法用于验证
+
+### 解决方案
+**改为生成 LinkedIn 搜索链接，而不是个人主页链接**
+
+### 后端改动 (`src/email_agent.py`)
+- 新增 `_generate_linkedin_search_url(name, company)` 函数
+  - 生成格式：`https://www.linkedin.com/search/results/people/?keywords=Name%20Company`
+  - 用户点击后在 LinkedIn 上搜索该人，自己选择正确的结果
+- 修改 `_normalize_recommendations`：
+  - 如果 AI 返回的 URL 验证失败，自动生成搜索链接
+  - 从 position 字段提取公司名（如 "VP at Goldman Sachs"）
+- 修改搜索提示词：
+  - 明确告诉模型**不要生成 LinkedIn URL**（`linkedin_url` 留空）
+  - 只需返回人名、职位、证据来源
+- 简化 `_validate_linkedin_url`：
+  - 移除对 grounding URLs 的依赖（因为是重定向 URL）
+  - 只做格式验证和假 URL 模式过滤
+
+### 前端改动 (`templates/index_v2.html`)
+- `renderRecommendations` 中区分搜索链接和个人主页链接
+  - 搜索链接：显示 🔍 图标 + "Search on LinkedIn" 提示
+  - 个人主页链接：正常显示 LinkedIn 图标
+
+### 用户体验改进
+- ✅ 不再出现 "页面不存在" 错误
+- ✅ 用户点击 LinkedIn 图标 → 打开搜索页面 → 自己选择正确的人
+- ✅ 保证每个推荐都有可用的 LinkedIn 搜索入口
+
+Files: `src/email_agent.py`, `templates/index_v2.html`
+
+---
+
+## 2025-12-30: Gemini Google Search API 升级
+
+### 问题
+- `google.generativeai` 包已废弃，`google_search_retrieval` 工具不再支持
+- 报错：`400 Unable to submit request because google_search_retrieval is not supported`
+
+### 解决方案
+- 安装新的 `google-genai` 包 (v1.56.0)
+- 使用新 API：`genai_new.Client` + `genai_types.Tool(google_search=genai_types.GoogleSearch())`
+
+### 后端改动 (`src/email_agent.py`)
+- 新增导入：`from google import genai as genai_new` 和 `from google.genai import types as genai_types`
+- 重写 `_call_gemini_with_search` 函数使用新 API
+- 新增 `_extract_json_from_text` 函数（因为 Search grounding 不支持 JSON mode）
+
+Files: `src/email_agent.py`, `requirements.txt`（需要 `google-genai>=1.56.0`）
+
+---
+
+## 2025-12-30: LinkedIn Profile Search Enhancement
+
+- **Find Targets 功能增强**：优先搜索 LinkedIn 信息
+- **后端改动** (`src/email_agent.py`)：
+  - 修改 `_build_recommendation_prompt`：新增 `linkedin_url` 字段要求
+  - 修改 `_normalize_recommendations`：提取并处理 `linkedin_url`，自动从 sources 中识别 LinkedIn URLs
+  - 修改搜索提示词：明确要求 "Search '[name] [company] LinkedIn'" 优先获取 LinkedIn 信息
+  - 针对 Finance/Banking 专业人士优化搜索策略
+- **前端改动** (`templates/index_v2.html`)：
+  - `renderRecommendations`：每个推荐卡片显示 LinkedIn 图标链接
+  - Profile Modal：新增 LinkedIn Profile 展示区域
+  - 新增 `.linkedin-link` 样式（LinkedIn 品牌蓝色 #0a66c2）
+- **返回数据结构**：每个推荐新增 `linkedin_url` 字段
+
+Files: `src/email_agent.py`, `templates/index_v2.html`
+
 ## 2025-12-23: 用户上传数据存储功能
 
 - 新增用户上传文件（简历 PDF + Target 信息）的持久化存储功能
