@@ -1,5 +1,33 @@
 # Development Log
 
+## 2026-01-10: 支持 Render Disk 持久化存储
+
+### 背景
+- Render 部署时文件系统是临时的，每次部署会重置
+- 需要使用 Persistent Disk 来保存用户数据和日志
+
+### 改动
+1. **`config.py`** - 新增统一数据目录配置
+   - 新增 `DATA_DIR` 变量，从环境变量读取（默认 `./data`）
+   - Render 生产环境设置 `DATA_DIR=/var/data`
+
+2. **`src/services/user_uploads.py`** - 改用统一配置
+   - `USERS_DIR` 改为从 `DATA_DIR` 派生
+
+3. **`src/services/prompt_collector.py`** - 改用统一配置
+   - `DATA_DIR_PROMPTS` 改为从 `DATA_DIR` 派生
+
+### Render 配置步骤
+1. Dashboard → 服务 → Disks → Add Disk
+2. Mount Path: `/var/data`
+3. 环境变量：`DATA_DIR=/var/data`
+
+### 文件命名规则
+- 用户数据：`{DATA_DIR}/users/{日期}/{时间戳}_{session_id}/`
+- Prompt 日志：`{DATA_DIR}/prompt_logs/{日期}/{时间戳}_{id}.json`
+
+---
+
 ## 2026-01-10: SerpAPI 直接搜人 - 方案 A 实现
 
 ### 背景问题

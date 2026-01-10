@@ -204,7 +204,13 @@ Quick reading:
    
    > Without SerpAPI, LinkedIn links will be search URLs. With SerpAPI, the system can find real LinkedIn profile URLs.
 
-3. Run the web app:
+4. (Production) Set up persistent data directory for Render Disk:
+   ```bash
+   export DATA_DIR=/var/data
+   ```
+   > Local development uses `./data` by default. On Render, set this to your Disk mount path.
+
+5. Run the web app:
    ```bash
    python app.py
    ```

@@ -15,6 +15,10 @@
     "output_generate_email": "...",
     "timestamp": "ISO-8601"
 }
+
+DATA_DIR 由环境变量配置：
+  - Render 生产环境: /var/data (Persistent Disk)
+  - 本地开发: ./data
 """
 
 from __future__ import annotations
@@ -28,8 +32,11 @@ from typing import Any
 from dataclasses import dataclass, field, asdict
 from threading import Lock
 
-# 数据存储目录
-DATA_DIR = Path(__file__).parent.parent.parent / "data" / "prompt_logs"
+# 从统一配置导入数据目录
+from config import DATA_DIR
+
+# Prompt 日志存储目录
+DATA_DIR_PROMPTS = DATA_DIR / "prompt_logs"
 
 
 def get_local_now() -> datetime:
@@ -101,7 +108,7 @@ class PromptDataCollector:
         self._enabled = os.environ.get("COLLECT_PROMPTS", "true").lower() in ("1", "true", "yes")
         
         # 确保数据目录存在
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        DATA_DIR_PROMPTS.mkdir(parents=True, exist_ok=True)
     
     @property
     def enabled(self) -> bool:
@@ -196,7 +203,7 @@ class PromptDataCollector:
         
         # 按日期分目录（使用 record 的时间）
         date_str = ts_dt.strftime("%Y-%m-%d")
-        day_dir = DATA_DIR / date_str
+        day_dir = DATA_DIR_PROMPTS / date_str
         day_dir.mkdir(parents=True, exist_ok=True)
         
         # 文件名：{timestamp}_{id[:8]}.json（使用 record 的时间）
@@ -240,9 +247,9 @@ class PromptDataCollector:
         records = []
         
         if date_filter:
-            dirs = [DATA_DIR / date_filter] if (DATA_DIR / date_filter).exists() else []
+            dirs = [DATA_DIR_PROMPTS / date_filter] if (DATA_DIR_PROMPTS / date_filter).exists() else []
         else:
-            dirs = [d for d in DATA_DIR.iterdir() if d.is_dir()]
+            dirs = [d for d in DATA_DIR_PROMPTS.iterdir() if d.is_dir()]
         
         for day_dir in dirs:
             for filepath in day_dir.glob("*.json"):

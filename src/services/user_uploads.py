@@ -1,10 +1,14 @@
 """User Upload Storage Service.
 
 保存用户上传的简历 PDF 和 target 信息。
-存储路径: data/users/{日期}/{时间戳}_{session_id}/
+存储路径: {DATA_DIR}/users/{日期}/{时间戳}_{session_id}/
   - resume.pdf (原始简历)
   - resume_profile.json (解析后的简历数据)
   - targets.json (target 信息列表)
+
+DATA_DIR 由环境变量配置：
+  - Render 生产环境: /var/data (Persistent Disk)
+  - 本地开发: ./data
 """
 
 from __future__ import annotations
@@ -18,8 +22,11 @@ from typing import Any, Optional
 from dataclasses import dataclass, field, asdict
 from threading import Lock
 
-# 数据存储目录
-USERS_DIR = Path(__file__).parent.parent.parent / "data" / "users"
+# 从统一配置导入数据目录
+from config import DATA_DIR
+
+# 用户数据存储目录
+USERS_DIR = DATA_DIR / "users"
 
 
 def get_local_now() -> datetime:

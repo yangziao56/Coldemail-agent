@@ -1,6 +1,16 @@
 """Global configuration values."""
 
 import os
+from pathlib import Path
+
+# ============== 数据存储目录配置 ==============
+# Render Disk 挂载路径，本地开发时使用项目根目录下的 data/
+DATA_DIR = Path(os.environ.get("DATA_DIR", Path(__file__).parent / "data"))
+try:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+except PermissionError:
+    # 本地测试时可能没有权限创建 /var/data，跳过
+    pass
 
 # Default Gemini model (can be overridden via env)
 DEFAULT_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
