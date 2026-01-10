@@ -1178,6 +1178,477 @@ def _generate_linkedin_search_url(name: str, company: str = "") -> str:
     return f"https://www.linkedin.com/search/results/people/?keywords={encoded_query}"
 
 
+def _lookup_linkedin_via_serpapi(name: str, company: str = "", additional_context: str = "") -> str | None:
+    """
+    Use SerpAPI to search Google for a person's LinkedIn profile URL.
+    
+    This provides more accurate LinkedIn URLs by searching Google with site:linkedin.com/in/
+    and returning the actual profile URL from the search results.
+    
+    Args:
+        name: Person's full name
+        company: Optional company name for better search accuracy
+        additional_context: Optional additional context (title, field, etc.)
+        
+    Returns:
+        LinkedIn profile URL if found, None otherwise
+        
+    Requires:
+        SERPAPI_KEY environment variable to be set
+    """
+    import urllib.request
+    import urllib.parse
+    
+    api_key = os.environ.get("SERPAPI_KEY") or os.environ.get("SERP_API_KEY")
+    if not api_key:
+        return None
+    
+    # Build search query
+    query_parts = [f'site:linkedin.com/in/', f'"{name}"']
+    if company:
+        query_parts.append(f'"{company}"')
+    if additional_context:
+        query_parts.append(additional_context)
+    
+    query = " ".join(query_parts)
+    
+    params = urllib.parse.urlencode({
+        "engine": "google",
+        "q": query,
+        "api_key": api_key,
+        "num": 3,  # Only need top few results
+    })
+    
+    url = f"https://serpapi.com/search.json?{params}"
+    
+    try:
+        with urllib.request.urlopen(url, timeout=10) as response:
+            data = json.loads(response.read().decode())
+        
+        if "organic_results" not in data or not data["organic_results"]:
+            print(f"[SerpAPI] No results found for: {name}")
+            return None
+        
+        # Look through results for a valid LinkedIn profile URL
+        for result in data["organic_results"]:
+            link = result.get("link", "")
+            if not link:
+                continue
+            
+            # Verify it's a LinkedIn personal profile URL
+            if "/in/" in link and ("linkedin.com/in/" in link.lower()):
+                # Clean up the URL (remove tracking params)
+                clean_url = link.split("?")[0].rstrip("/")
+                
+                # Validate format
+                if _validate_linkedin_url(clean_url):
+                    # CRITICAL: Verify the name appears in the result title
+                    # This prevents returning URLs for completely different people
+                    title = result.get("title", "").lower()
+                    name_parts = name.lower().split()
+                    
+                    # Check if at least first name OR last name appears in the title
+                    # (for names with 2+ parts, at least one meaningful part should match)
+                    matching_parts = [part for part in name_parts if len(part) > 2 and part in title]
+                    
+                    if matching_parts:
+                        print(f"[SerpAPI] Found LinkedIn URL for {name}: {clean_url} (matched: {matching_parts})")
+                        return clean_url
+                    else:
+                        # Name doesn't match - skip this result
+                        print(f"[SerpAPI] Skipping {clean_url} - name '{name}' not found in title: '{title[:50]}'")
+                        continue
+        
+        print(f"[SerpAPI] No matching LinkedIn profile found for: {name}")
+        return None
+        
+    except urllib.error.URLError as e:
+        print(f"[SerpAPI] Network error: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"[SerpAPI] JSON parse error: {e}")
+        return None
+    except Exception as e:
+        print(f"[SerpAPI] Unexpected error: {e}")
+        return None
+
+
+def _build_serpapi_search_query(
+    preferences: dict | None = None,
+    field: str = "",
+    purpose: str = "",
+) -> str:
+    """
+    将用户的 preferences 转化为 SerpAPI LinkedIn 搜索词
+    
+    Args:
+        preferences: 用户偏好设置
+        field: 领域
+        purpose: 目的
+        
+    Returns:
+        构建好的搜索词
+    """
+    parts = ['site:linkedin.com/in/']
+    prefs = preferences or {}
+    
+    # 1. 职位/级别关键词
+    seniority = str(prefs.get("seniority", "") or "").strip()
+    target_titles = prefs.get("target_role_titles", [])
+    
+    if target_titles and isinstance(target_titles, list):
+        # ["Analyst", "Associate"] → ("Analyst" OR "Associate")
+        titles = [t.strip() for t in target_titles if t.strip()]
+        if len(titles) > 1:
+            parts.append("(" + " OR ".join(f'"{t}"' for t in titles[:3]) + ")")
+        elif titles:
+            parts.append(f'"{titles[0]}"')
+    elif seniority:
+        parts.append(f'"{seniority}"')
+    
+    # 2. 公司/机构关键词
+    must_have = str(prefs.get("must_have", "") or "").strip()
+    org_type = str(prefs.get("org_type", "") or "").strip()
+    
+    if must_have:
+        # "Goldman Sachs, Morgan Stanley, M&A" → 提取公司名
+        keywords = [k.strip() for k in must_have.split(",") if k.strip()]
+        # 识别公司名（通常首字母大写且多个单词）
+        companies = [k for k in keywords if len(k.split()) >= 2 or k[0].isupper()]
+        if companies:
+            if len(companies) > 1:
+                parts.append("(" + " OR ".join(f'"{c}"' for c in companies[:3]) + ")")
+            else:
+                parts.append(f'"{companies[0]}"')
+    elif org_type:
+        # "Investment Bank" → 搜索投行相关
+        parts.append(f'"{org_type}"')
+    
+    # 3. 领域/方向关键词
+    search_intent = str(prefs.get("search_intent", "") or "").strip()
+    group = str(prefs.get("group", "") or "").strip()  # e.g., "M&A", "TMT"
+    sector = str(prefs.get("sector", "") or "").strip()
+    
+    if group:
+        parts.append(f'"{group}"')
+    elif sector:
+        parts.append(f'"{sector}"')
+    elif search_intent:
+        # 从 search_intent 提取关键词（简单实现）
+        # 例如 "找投行 M&A 方向的 Associate" → 提取 M&A
+        for keyword in ["M&A", "PE", "VC", "IB", "AM", "HF", "TMT", "Healthcare", "FIG", "Tech"]:
+            if keyword.lower() in search_intent.lower():
+                parts.append(f'"{keyword}"')
+                break
+    
+    # 如果没有从 preferences 提取到足够信息，使用 field
+    if len(parts) <= 2 and field:
+        parts.append(f'"{field}"')
+    
+    # 4. 地区
+    location = str(prefs.get("location", "") or "").strip()
+    if location:
+        # 只取主要城市/地区
+        loc_parts = location.split(",")
+        if loc_parts:
+            parts.append(f'"{loc_parts[0].strip()}"')
+    
+    # 5. 排除词
+    must_not = str(prefs.get("must_not", "") or "").strip()
+    if must_not:
+        excludes = [e.strip() for e in must_not.split(",") if e.strip()]
+        for ex in excludes[:2]:  # 最多排除2个词
+            parts.append(f'-"{ex}"')
+    
+    return " ".join(parts)
+
+
+def _search_linkedin_via_serpapi(
+    preferences: dict | None = None,
+    field: str = "",
+    purpose: str = "",
+    count: int = 10,
+) -> list[dict[str, Any]]:
+    """
+    直接使用 SerpAPI 搜索 LinkedIn 找到符合条件的真实的人
+    
+    不依赖 AI 生成名字，而是从 Google 搜索结果中提取真实存在的 LinkedIn 用户
+    
+    Args:
+        preferences: 用户偏好设置
+        field: 领域
+        purpose: 目的
+        count: 需要返回的人数
+        
+    Returns:
+        包含真实 LinkedIn 用户信息的列表
+    """
+    import urllib.request
+    import urllib.parse
+    
+    api_key = os.environ.get("SERPAPI_KEY") or os.environ.get("SERP_API_KEY")
+    if not api_key:
+        print("[SerpAPI Search] No API key configured")
+        return []
+    
+    # 构建搜索词
+    query = _build_serpapi_search_query(preferences, field, purpose)
+    print(f"[SerpAPI Search] Query: {query}")
+    
+    params = urllib.parse.urlencode({
+        "engine": "google",
+        "q": query,
+        "api_key": api_key,
+        "num": min(count * 2, 20),  # 搜索多一些，因为可能有些结果不是个人主页
+    })
+    
+    url = f"https://serpapi.com/search.json?{params}"
+    
+    try:
+        with urllib.request.urlopen(url, timeout=15) as response:
+            data = json.loads(response.read().decode())
+        
+        if "organic_results" not in data or not data["organic_results"]:
+            print(f"[SerpAPI Search] No results found")
+            return []
+        
+        results = []
+        for result in data["organic_results"]:
+            link = result.get("link", "")
+            title = result.get("title", "")
+            snippet = result.get("snippet", "")
+            
+            # 验证是 LinkedIn 个人主页
+            if not link or "/in/" not in link or "linkedin.com/in/" not in link.lower():
+                continue
+            
+            # 清理 URL
+            clean_url = link.split("?")[0].rstrip("/")
+            if not _validate_linkedin_url(clean_url):
+                continue
+            
+            # 从标题中提取姓名和职位
+            # LinkedIn 标题格式通常是: "Name - Title at Company | LinkedIn"
+            # 或: "Name - Title - Company | LinkedIn"
+            name, position = _parse_linkedin_title(title)
+            
+            if not name:
+                continue
+            
+            # 从 snippet 中提取更多信息
+            evidence = []
+            if snippet:
+                evidence.append(snippet[:200])
+            
+            results.append({
+                "name": name,
+                "position": position,
+                "field": field,
+                "linkedin_url": clean_url,
+                "match_score": 75,  # 默认分数，后续可以用 AI 评分
+                "match_reason": f"Found via LinkedIn search for {field}",
+                "common_interests": "",
+                "evidence": evidence,
+                "sources": [clean_url],
+                "uncertainty": "low",  # 真实存在的人
+            })
+            
+            if len(results) >= count:
+                break
+        
+        print(f"[SerpAPI Search] Found {len(results)} real LinkedIn profiles")
+        return results
+        
+    except urllib.error.URLError as e:
+        print(f"[SerpAPI Search] Network error: {e}")
+        return []
+    except json.JSONDecodeError as e:
+        print(f"[SerpAPI Search] JSON parse error: {e}")
+        return []
+    except Exception as e:
+        print(f"[SerpAPI Search] Unexpected error: {e}")
+        return []
+
+
+def _parse_linkedin_title(title: str) -> tuple[str, str]:
+    """
+    从 LinkedIn 搜索结果标题中提取姓名和职位
+    
+    常见格式:
+    - "John Smith - VP at Goldman Sachs | LinkedIn"
+    - "Jane Doe - Associate - Morgan Stanley | LinkedIn"
+    - "Mike Chen, CFA - Portfolio Manager | LinkedIn"
+    
+    Args:
+        title: LinkedIn 搜索结果标题
+        
+    Returns:
+        (name, position) 元组
+    """
+    if not title:
+        return "", ""
+    
+    # 移除 " | LinkedIn" 或 "- LinkedIn" 后缀
+    title = title.replace(" | LinkedIn", "").replace("- LinkedIn", "").strip()
+    
+    # 尝试按 " - " 分割
+    if " - " in title:
+        parts = title.split(" - ", 1)
+        name = parts[0].strip()
+        position = parts[1].strip() if len(parts) > 1 else ""
+        
+        # 处理 "Name, CFA" 或 "Name, MBA" 格式
+        if "," in name:
+            name_parts = name.split(",")
+            name = name_parts[0].strip()
+        
+        return name, position
+    
+    # 尝试按 " at " 分割（某些格式）
+    if " at " in title.lower():
+        idx = title.lower().find(" at ")
+        return title[:idx].strip(), title[idx:].strip()
+    
+    # 无法解析，返回整个标题作为名字
+    return title.strip(), ""
+
+
+def _ai_score_and_analyze_candidates(
+    candidates: list[dict[str, Any]],
+    sender_profile: dict | None = None,
+    preferences: dict | None = None,
+    purpose: str = "",
+    field: str = "",
+    model: str = DEFAULT_MODEL,
+) -> list[dict[str, Any]]:
+    """
+    使用 AI 对候选人进行评分、排序和匹配度分析
+    
+    Args:
+        candidates: SerpAPI 搜索到的候选人列表
+        sender_profile: 发送者画像
+        preferences: 用户偏好
+        purpose: 目的
+        field: 领域
+        model: 使用的模型
+        
+    Returns:
+        包含 AI 评分和分析的候选人列表
+    """
+    if not candidates:
+        return candidates
+    
+    # 构建发送者信息
+    sender_info = ""
+    if sender_profile:
+        sender_name = sender_profile.get("name", "")
+        sender_edu = sender_profile.get("education", [])
+        sender_exp = sender_profile.get("experiences", [])
+        sender_skills = sender_profile.get("skills", [])
+        
+        sender_parts = []
+        if sender_name:
+            sender_parts.append(f"Name: {sender_name}")
+        if sender_edu:
+            sender_parts.append(f"Education: {', '.join(sender_edu[:3])}")
+        if sender_exp:
+            sender_parts.append(f"Experience: {', '.join(sender_exp[:3])}")
+        if sender_skills:
+            sender_parts.append(f"Skills: {', '.join(sender_skills[:5])}")
+        
+        if sender_parts:
+            sender_info = "\n".join(sender_parts)
+    
+    # 构建偏好信息
+    pref_info = ""
+    if preferences:
+        pref_parts = []
+        if preferences.get("search_intent"):
+            pref_parts.append(f"Looking for: {preferences['search_intent']}")
+        if preferences.get("seniority"):
+            pref_parts.append(f"Seniority: {preferences['seniority']}")
+        if preferences.get("org_type"):
+            pref_parts.append(f"Organization type: {preferences['org_type']}")
+        if preferences.get("must_have"):
+            pref_parts.append(f"Must have: {preferences['must_have']}")
+        if preferences.get("must_not"):
+            pref_parts.append(f"Must not: {preferences['must_not']}")
+        if preferences.get("location"):
+            pref_parts.append(f"Location: {preferences['location']}")
+        
+        if pref_parts:
+            pref_info = "\n".join(pref_parts)
+    
+    # 构建候选人列表
+    candidates_text = ""
+    for i, c in enumerate(candidates, 1):
+        candidates_text += f"""
+{i}. {c.get('name', 'Unknown')}
+   Position: {c.get('position', 'N/A')}
+   LinkedIn: {c.get('linkedin_url', 'N/A')}
+   Evidence: {'; '.join(c.get('evidence', [])[:2]) if c.get('evidence') else 'N/A'}
+"""
+    
+    # 构建 AI 评分 prompt
+    prompt = f"""You are a networking advisor. Analyze and score these LinkedIn candidates for a cold outreach.
+
+PURPOSE: {purpose}
+FIELD: {field}
+
+SENDER PROFILE:
+{sender_info if sender_info else "Not provided"}
+
+PREFERENCES:
+{pref_info if pref_info else "Not provided"}
+
+CANDIDATES:
+{candidates_text}
+
+For each candidate, provide:
+1. match_score (60-95): How well they match the sender's goals and preferences
+2. match_reason (1-2 sentences): Why they are a good/poor match
+3. common_interests (1 sentence): Potential common ground or talking points
+4. outreach_angle (1 sentence): Suggested angle for cold email
+5. response_likelihood (low/medium/high): How likely they are to respond
+
+Return a JSON object with key "scored_candidates" containing a list in the same order as input.
+Each item should have: name, match_score, match_reason, common_interests, outreach_angle, response_likelihood.
+
+Focus on:
+- Seniority alignment (not too senior, not too junior)
+- Industry/sector relevance
+- Potential shared background (education, previous companies)
+- Accessibility (people who are active and might respond)
+
+Return JSON only."""
+
+    try:
+        content = _call_gemini(prompt, model=model, json_mode=True)
+        result = json.loads(content)
+        scored_list = result.get("scored_candidates", [])
+        
+        # 合并 AI 分析结果到原始候选人
+        for i, candidate in enumerate(candidates):
+            if i < len(scored_list):
+                scored = scored_list[i]
+                candidate["match_score"] = scored.get("match_score", 75)
+                candidate["match_reason"] = scored.get("match_reason", "")
+                candidate["common_interests"] = scored.get("common_interests", "")
+                candidate["outreach_angle"] = scored.get("outreach_angle", "")
+                candidate["response_likelihood"] = scored.get("response_likelihood", "medium")
+        
+        # 按分数排序
+        candidates.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+        
+        print(f"[AI Scoring] Successfully scored {len(candidates)} candidates")
+        return candidates
+        
+    except Exception as e:
+        print(f"[AI Scoring] Error: {e}")
+        # 返回原始列表，使用默认分数
+        return candidates
+
+
 def _normalize_recommendations(items: Any, grounding_urls: list[str] | None = None) -> list[dict[str, Any]]:
     """
     Normalize recommendation items into a consistent format.
@@ -1237,17 +1708,24 @@ def _normalize_recommendations(items: Any, grounding_urls: list[str] | None = No
         # Validate the LinkedIn URL format
         linkedin_url = _validate_linkedin_url(linkedin_url_raw)
         
-        # If no valid LinkedIn URL, generate a search URL instead
-        # This ensures users can always find the person on LinkedIn
+        # Extract company from position if available (used for SerpAPI and fallback)
+        company = ""
+        if position:
+            # Try to extract company name from position (e.g., "VP at Goldman Sachs")
+            for keyword in ["at ", "@ ", ", "]:
+                if keyword in position:
+                    company = position.split(keyword)[-1].strip()
+                    break
+        
+        # If no valid LinkedIn URL from model, try SerpAPI to find the real profile URL
         if not linkedin_url:
-            # Extract company from position if available
-            company = ""
-            if position:
-                # Try to extract company name from position (e.g., "VP at Goldman Sachs")
-                for keyword in ["at ", "@ ", ", "]:
-                    if keyword in position:
-                        company = position.split(keyword)[-1].strip()
-                        break
+            # Try SerpAPI lookup (returns None if SERPAPI_KEY not set or search fails)
+            serpapi_url = _lookup_linkedin_via_serpapi(name, company, field)
+            if serpapi_url:
+                linkedin_url = serpapi_url
+        
+        # If still no valid LinkedIn URL, fall back to search URL
+        if not linkedin_url:
             linkedin_url = _generate_linkedin_search_url(name, company)
 
         normalized.append(
@@ -1357,7 +1835,56 @@ def find_target_recommendations(
     collected_prompt = ""
     collected_output = ""
 
-    # Primary: Gemini with Google Search grounding (fast and reliable)
+    # ============================================================
+    # PRIMARY: SerpAPI 直接搜索 LinkedIn 找真实的人
+    # 不依赖 AI 生成名字，直接从搜索结果中提取真实存在的用户
+    # ============================================================
+    serpapi_key = os.environ.get("SERPAPI_KEY") or os.environ.get("SERP_API_KEY")
+    if serpapi_key:
+        try:
+            print("[SerpAPI Search] Using SerpAPI to find real LinkedIn profiles...")
+            serpapi_results = _search_linkedin_via_serpapi(
+                preferences=preferences,
+                field=field,
+                purpose=purpose,
+                count=count,
+            )
+            
+            if serpapi_results and len(serpapi_results) >= 3:
+                # 成功找到足够的真实用户
+                print(f"[SerpAPI Search] Successfully found {len(serpapi_results)} real profiles")
+                
+                # 使用 AI 进行评分和匹配度分析
+                print("[AI Scoring] Analyzing candidates with AI...")
+                scored_results = _ai_score_and_analyze_candidates(
+                    candidates=serpapi_results,
+                    sender_profile=sender_profile,
+                    preferences=preferences,
+                    purpose=purpose,
+                    field=field,
+                    model=model,
+                )
+                
+                # 保存收集的数据
+                if PROMPT_COLLECTOR_AVAILABLE and prompt_collector and session_id:
+                    search_query = _build_serpapi_search_query(preferences, field, purpose)
+                    prompt_collector.record_find_target(
+                        session_id=session_id,
+                        prompt=f"SerpAPI Search: {search_query}",
+                        output=json.dumps(scored_results, ensure_ascii=False),
+                        metadata={"method": "serpapi_direct_with_ai_scoring", "count": len(scored_results)}
+                    )
+                
+                return scored_results[:count]
+            else:
+                print(f"[SerpAPI Search] Only found {len(serpapi_results) if serpapi_results else 0} results, falling back to Gemini")
+        except Exception as e:
+            print(f"[SerpAPI Search] Error: {e}, falling back to Gemini")
+
+    # ============================================================
+    # FALLBACK: Gemini with Google Search grounding
+    # 当 SerpAPI 不可用或结果不足时使用
+    # ============================================================
     if USE_GEMINI_SEARCH:
         try:
             prompt = _build_recommendation_prompt(

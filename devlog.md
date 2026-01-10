@@ -1,5 +1,98 @@
 # Development Log
 
+## 2026-01-10: SerpAPI 直接搜人 - 方案 A 实现
+
+### 背景问题
+- 之前的流程：AI (Gemini) 生成人名列表 → SerpAPI 根据人名搜索 LinkedIn
+- 问题：AI 会编造名字或返回太通用的名字（如 "Emily Carter"）
+- SerpAPI 搜索这些名字时，找到的是完全不同的人
+
+### 新方案：SerpAPI 直接搜索 LinkedIn 找真实的人
+**不再依赖 AI 生成名字**，而是：
+1. 将用户的 preferences（职位、公司、领域等）转化为搜索词
+2. 直接用 SerpAPI 搜索 LinkedIn（`site:linkedin.com/in/`）
+3. 从搜索结果中提取真实存在的用户信息
+
+### 搜索词构建示例
+| 用户需求 | 生成的搜索词 |
+|---------|-------------|
+| 找 Goldman M&A Associate | `site:linkedin.com/in/ "Associate" ("Goldman Sachs" OR "Morgan Stanley") "M&A" "New York"` |
+| 找 VC Partner | `site:linkedin.com/in/ "Partner" "Venture Capital" -intern` |
+
+### 后端改动 (`src/email_agent.py`)
+- 新增 `_build_serpapi_search_query(preferences, field, purpose)` 函数
+  - 将用户偏好转化为 Google 搜索词
+  - 支持：职位/级别、公司、领域、地区、排除词
+- 新增 `_search_linkedin_via_serpapi(preferences, field, purpose, count)` 函数
+  - 直接搜索 LinkedIn 找真实用户
+  - 从搜索结果标题中解析姓名和职位
+  - 返回带有真实 LinkedIn URL 的用户列表
+- 新增 `_parse_linkedin_title(title)` 函数
+  - 解析 LinkedIn 搜索结果标题（如 "John Smith - VP at Goldman | LinkedIn"）
+- 修改 `find_target_recommendations()`：
+  - **首选方案**：SerpAPI 直接搜人（如果配置了 SERPAPI_KEY）
+  - **回退方案**：Gemini Search（如果 SerpAPI 结果不足）
+
+### 流程对比
+**旧流程**（有问题）：
+```
+用户输入 → AI 生成"人名" → SerpAPI 验证 LinkedIn URL → 返回
+                ↓
+         问题：AI 编造名字
+```
+
+**新流程**（方案 A）：
+```
+用户输入 → 构建搜索词 → SerpAPI 直接搜 LinkedIn → 提取真实用户 → 返回
+                                    ↓
+                            ✅ 所有用户都是真实存在的
+```
+
+### 测试结果
+搜索 `site:linkedin.com/in/ "Associate" ("Goldman Sachs" OR "Morgan Stanley") "M&A" "New York"` 返回：
+- ✅ Zach Rudich - M&A Investment Banking Associate
+- ✅ Michael Lipsky - M&A at Morgan Stanley
+- ✅ Derek Vincent - Investment Banking Associate at Goldman Sachs
+
+Files: `src/email_agent.py`, `devlog.md`
+
+---
+
+## 2026-01-10: SerpAPI 集成 - 真实 LinkedIn URL 查找（已被方案 A 取代）
+
+### 背景
+- 之前的方案：生成 LinkedIn 搜索链接（用户需要手动点击搜索结果）
+- 用户体验不够好：多一步操作
+
+### 新方案：SerpAPI Google Search
+- 使用 SerpAPI 调用 Google Search，搜索 `site:linkedin.com/in/ "Name" "Company"`
+- 从搜索结果中提取真实的 LinkedIn 个人主页 URL
+- 如果 SerpAPI 不可用或查找失败，回退到搜索链接方案
+
+### 后端改动 (`src/email_agent.py`)
+- 新增 `_lookup_linkedin_via_serpapi(name, company, additional_context)` 函数
+  - 使用 SerpAPI Google Search 查找真实 LinkedIn URL
+  - 验证搜索结果中的 URL 格式和名字匹配度
+  - 需要环境变量 `SERPAPI_KEY`（或 `SERP_API_KEY`）
+- 修改 `_normalize_recommendations`：
+  - 优先使用 SerpAPI 查找真实 URL
+  - 如果 SerpAPI 失败或未配置，回退到搜索链接
+
+### 配置
+- 环境变量：`SERPAPI_KEY`（可选）
+- 获取 API Key：https://serpapi.com/
+- 免费套餐：100 次/月
+- 付费套餐：$50/月 5000 次
+
+### LinkedIn URL 查找优先级
+1. AI 模型返回的 URL（如果格式验证通过）
+2. SerpAPI Google Search 查找的真实 URL
+3. LinkedIn 搜索链接（fallback）
+
+Files: `src/email_agent.py`, `README.md`, `devlog.md`
+
+---
+
 ## 2025-12-31: LinkedIn URL 生成策略优化
 
 ### 问题

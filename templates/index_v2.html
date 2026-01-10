@@ -2236,6 +2236,22 @@ I&apos;m {{sender_name}}, currently ...
                 <p id="modal-match-score">-</p>
             </div>
             <div class="profile-section">
+                <h4>📬 Response Likelihood</h4>
+                <p id="modal-response-likelihood">-</p>
+            </div>
+            <div class="profile-section">
+                <h4>💡 Why This Match</h4>
+                <p id="modal-match-reason">-</p>
+            </div>
+            <div class="profile-section">
+                <h4>🤝 Common Interests</h4>
+                <p id="modal-common-interests">-</p>
+            </div>
+            <div class="profile-section">
+                <h4>✉️ Outreach Angle</h4>
+                <p id="modal-outreach-angle">-</p>
+            </div>
+            <div class="profile-section">
                 <h4>🎓 Education</h4>
                 <ul id="modal-education"><li>-</li></ul>
             </div>
@@ -2250,10 +2266,6 @@ I&apos;m {{sender_name}}, currently ...
             <div class="profile-section">
                 <h4>📂 Projects</h4>
                 <ul id="modal-projects"><li>-</li></ul>
-            </div>
-            <div class="profile-section">
-                <h4>💡 Why This Match</h4>
-                <p id="modal-match-reason">-</p>
             </div>
             <div class="profile-section">
                 <h4>🔎 Evidence</h4>
@@ -3821,8 +3833,31 @@ I&apos;m {{sender_name}}, currently ...
                 linkedinSection.style.display = 'none';
             }
             
+            // Match Score with color coding
             document.getElementById('modal-match-score').innerHTML = `<span style="color: ${rec.match_score >= 80 ? '#28a745' : rec.match_score >= 60 ? '#ffc107' : '#dc3545'}; font-weight: bold;">${rec.match_score}%</span> compatibility`;
-            document.getElementById('modal-match-reason').textContent = rec.match_reason || '-';
+            
+            // Response Likelihood with badge
+            const likelihood = rec.response_likelihood || 'medium';
+            const likelihoodColors = {
+                'high': { bg: '#d4edda', text: '#155724', label: '🟢 High - Likely to respond' },
+                'medium': { bg: '#fff3cd', text: '#856404', label: '🟡 Medium - May respond' },
+                'low': { bg: '#f8d7da', text: '#721c24', label: '🔴 Low - Less likely' }
+            };
+            const lc = likelihoodColors[likelihood] || likelihoodColors['medium'];
+            document.getElementById('modal-response-likelihood').innerHTML = `<span style="background: ${lc.bg}; color: ${lc.text}; padding: 4px 12px; border-radius: 12px; font-weight: 500;">${lc.label}</span>`;
+            
+            // Match Reason
+            document.getElementById('modal-match-reason').textContent = rec.match_reason || 'Analysis not available';
+            
+            // Common Interests
+            document.getElementById('modal-common-interests').textContent = rec.common_interests || 'No common interests identified';
+            
+            // Outreach Angle
+            document.getElementById('modal-outreach-angle').innerHTML = rec.outreach_angle 
+                ? `<span style="background: #e8f4fd; color: #0366d6; padding: 8px 12px; border-radius: 8px; display: block;">${rec.outreach_angle}</span>`
+                : '<span style="color: #999;">Will be suggested when generating email</span>';
+            
+            // Uncertainty
             document.getElementById('modal-uncertainty').textContent = rec.uncertainty || '-';
             
             // Show education, experience, skills, projects if available (fetched profile)

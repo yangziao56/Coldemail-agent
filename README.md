@@ -196,6 +196,14 @@ Quick reading:
    ```
    Get your API Key: https://makersuite.google.com/app/apikey
 
+3. (Optional) Set up SerpAPI Key for accurate LinkedIn URLs:
+   ```bash
+   export SERPAPI_KEY=your_serpapi_key
+   ```
+   Get your API Key: https://serpapi.com/
+   
+   > Without SerpAPI, LinkedIn links will be search URLs. With SerpAPI, the system can find real LinkedIn profile URLs.
+
 3. Run the web app:
    ```bash
    python app.py
